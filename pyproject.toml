@@ -1,0 +1,51 @@
+[project]
+name = "accubet"
+version = "0.1.0"
+description = "Football value-betting intelligence platform (modeling-first engine)."
+readme = "README.md"
+requires-python = ">=3.11"
+authors = [{ name = "AccuBet" }]
+
+# Phase 0/1 dependencies are kept lean and pure-Python friendly.
+# Heavy ML/stats libraries are isolated in the [ml] extra (Phase 2+).
+dependencies = [
+    "requests>=2.31",
+    "SQLAlchemy>=2.0",
+    "pydantic>=2.5",
+    "pydantic-settings>=2.1",
+    "PyYAML>=6.0",
+    "typer>=0.12",
+    "rich>=13.0",
+    "python-dotenv>=1.0",
+    "tenacity>=8.2",
+    "beautifulsoup4>=4.12",
+]
+
+[project.optional-dependencies]
+# Phase 2+ statistical / ML stack. Installed only when we reach the modeling layer.
+ml = [
+    "numpy>=1.26",
+    "scipy>=1.11",
+    "pandas>=2.1",
+    "scikit-learn>=1.4",
+    "statsmodels>=0.14",
+    "xgboost>=2.0",
+    "lightgbm>=4.1",
+    "glicko2>=2.0",
+]
+# Browser-automation scraping (Phase 1 Betway connector falls back to requests+bs4).
+scrape = ["playwright>=1.40"]
+dev = ["pytest>=8.0", "ruff>=0.4"]
+
+[project.scripts]
+accubet = "accubet.cli:app"
+
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["accubet*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

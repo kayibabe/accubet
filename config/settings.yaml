@@ -1,0 +1,91 @@
+# AccuBet tunable settings. Secrets live in .env, NOT here.
+# Everything in this file can be changed without touching code.
+
+apifootball:
+  # Free tier hard limit. The quota guard stops non-essential calls before this.
+  daily_request_limit: 100
+  quota_soft_stop: 90          # refuse non-essential pulls once we hit this
+  rate_limit_per_minute: 10    # free tier throttle
+  # How long a cached response stays "fresh" before we consider re-pulling.
+  cache_ttl_minutes: 720       # 12h; fixtures get a cheap daily diff-check regardless
+  odds_refresh_per_match: 3    # max odds re-pulls per match pre-kickoff (movement/CLV)
+
+# Which API-Football league IDs to track. Mix of global + domestic.
+# IDs are configurable — verify against /leagues. Malawi domestic may be absent.
+leagues:
+  - { id: 39,  name: "England — Premier League",  scope: global }
+  - { id: 140, name: "Spain — La Liga",            scope: global }
+  - { id: 135, name: "Italy — Serie A",            scope: global }
+  - { id: 78,  name: "Germany — Bundesliga",       scope: global }
+  - { id: 61,  name: "France — Ligue 1",           scope: global }
+  - { id: 2,   name: "UEFA Champions League",      scope: global }
+  - { id: 1,   name: "FIFA World Cup",             scope: global }
+  - { id: 71,  name: "Brazil — Serie A",           scope: global }
+  - { id: 253, name: "USA — MLS",                  scope: global }
+  - { id: 233, name: "Egypt — Premier League",     scope: domestic }
+  - { id: 288, name: "South Africa — PSL",         scope: domestic }
+
+# Markets we collect/evaluate (maps to API-Football bet ids in normalize.py).
+markets:
+  - match_winner        # 1X2
+  - double_chance
+  - draw_no_bet
+  - over_under          # totals (default line 2.5)
+  - btts                # both teams to score
+
+# Value-bet gates. A bet must clear BOTH to be recommended.
+value:
+  min_ev: 0.05          # EV > 5%
+  min_confidence: 0.70  # confidence > 70%
+  min_books_for_consensus: 3   # need this many books for a trustworthy fair price
+
+# Scan liquidity filter — only consider efficient, liquid markets by default.
+# This removes exotic-line noise (e.g. Over 6.5). Use `scan --all-markets` to bypass.
+scan:
+  markets: [match_winner, over_under, btts]
+  ou_lines: [2.5]
+
+# Ensemble model weights. Market is the primary signal; when stats are missing
+# the missing model's weight is redistributed to market (graceful degradation).
+model_weights:
+  market: 0.55
+  glicko: 0.15
+  goals:  0.10
+  form:   0.10
+  ml:     0.10
+
+# Staking — fractional Kelly with hard exposure caps.
+staking:
+  kelly_fraction: 0.25
+  max_stake_per_event: 0.03    # 3% of bankroll
+  max_daily_exposure: 0.15     # 15% of bankroll
+  starting_bankroll: 1000.0
+
+# Two-tier accumulator builder.
+accumulator:
+  banker:                       # high-strike, low odds
+    min_legs: 2
+    max_legs: 3
+    min_combined_odds: 1.3
+    max_combined_odds: 1.8
+    target_strike: 0.70
+  value:                        # the 3-5 combined-odds band, EV-optimized
+    min_legs: 2
+    max_legs: 4
+    min_combined_odds: 3.0
+    max_combined_odds: 5.0
+  modes:                        # leg-count / risk presets
+    conservative: { max_legs: 2 }
+    balanced:     { max_legs: 3 }
+    aggressive:   { max_legs: 4 }
+
+# Auto-tracking (paper bets) for performance measurement.
+tracking:
+  top_singles_per_day: 10
+  paper_stake: 10.0             # flat notional stake per paper bet for ROI math
+
+# Local execution bookmaker we compare API-fair price against.
+local_book:
+  name: "Betway Malawi"
+  base_url: "https://www.betway.co.mw"
+  enabled: true

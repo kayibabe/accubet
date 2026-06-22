@@ -1,0 +1,584 @@
+Advanced Football Value Betting Intelligence Platform
+
+Act as a senior software architect, quantitative sports analyst, machine learning engineer, and full-stack developer.
+
+Design and generate a complete production-ready football betting intelligence platform focused on identifying value bets and generating profitable accumulator suggestions.
+
+The system must prioritize long-term positive expected value (EV+) opportunities rather than simply predicting winners.
+
+1. System Objectives
+
+Build a platform that:
+
+Collects live football odds from multiple bookmakers
+Calculates implied probabilities
+Estimates true probabilities using statistical and machine learning models
+Identifies value bets and arbitrage opportunities
+Generates EV-ranked betting recommendations
+Produces optimized accumulator tickets
+Continuously monitors odds movement
+Maintains historical betting performance
+Tracks model profitability over time
+2. Data Collection Layer
+
+Create a robust odds ingestion system using APIs where available and browser automation where necessary.
+
+Bookmakers
+
+Initially support:
+
+BetWay Malawi
+BetPawa Malawi
+PremierBet Malawi
+
+Design architecture to easily add:
+
+1xBet
+Bet365
+Sportingbet
+MozzartBet
+Parimatch
+Requirements
+
+Implement:
+
+Rotating user agents
+Proxy support
+Rate limiting
+Retry logic
+Error handling
+Logging
+Duplicate detection
+
+Collect:
+
+Match Information
+Home Team
+Away Team
+Competition
+Country
+Kickoff Time
+Venue
+Markets
+Match Winner
+Double Chance
+Draw No Bet
+Over/Under Goals
+Both Teams To Score
+Correct Score
+Asian Handicap
+Corners
+Cards
+
+Normalize all bookmaker data into a common schema.
+
+3. Historical Data Engine
+
+Build modules that retrieve and store:
+
+Team Metrics
+Last 5 matches
+Last 10 matches
+Goals scored
+Goals conceded
+Home performance
+Away performance
+Clean sheets
+Expected Goals (xG)
+Expected Goals Against (xGA)
+League Metrics
+Average goals per game
+BTTS frequency
+Over 2.5 frequency
+Home win percentage
+Draw percentage
+Away win percentage
+Head-to-Head
+Last 5 meetings
+Last 10 meetings
+Goals trend
+BTTS trend
+
+Store data in a relational database.
+
+4. Probability Engine
+
+Implement multiple models:
+
+Model 1: Market Probability
+
+Convert bookmaker odds:
+
+Probability = 1 / Decimal Odds
+
+Remove bookmaker margin (vig).
+
+Model 2: Poisson Model
+
+Estimate:
+
+Home goals
+Away goals
+
+Generate:
+
+Match outcome probabilities
+Over/Under probabilities
+BTTS probabilities
+Model 3: Elo Rating Model
+
+Calculate:
+
+Team strength
+Form adjustments
+Home advantage
+Model 4: Machine Learning Model
+
+Train using historical data.
+
+Evaluate:
+
+Logistic Regression
+XGBoost
+Random Forest
+LightGBM
+
+Predict:
+
+Match Winner
+BTTS
+Over/Under
+5. Ensemble Forecasting
+
+Combine all models.
+
+Suggested weighting:
+
+Market Model: 25%
+Poisson: 25%
+Elo: 20%
+Machine Learning: 30%
+
+Generate:
+
+True Probability
+
+Final_Probability =
+Weighted Average of all models
+
+6. Value Betting Engine
+
+Calculate:
+
+Expected Value
+
+EV =
+(True Probability × Odds) − 1
+
+Value %
+
+Value =
+True Probability − Implied Probability
+
+Only recommend bets where:
+
+EV > 5%
+Confidence > 70%
+
+Allow thresholds to be configurable.
+
+7. Odds Comparison Engine
+
+Compare all bookmakers.
+
+For every market:
+
+Identify highest available odds
+Calculate best bookmaker
+Track odds movement
+Detect steam moves
+Detect line drops
+
+Generate alerts when:
+
+Odds increase significantly
+New value opportunities appear
+8. Accumulator Builder
+
+Generate accumulator tickets automatically.
+
+Rules
+
+Number of selections:
+
+2–4 selections
+
+Combined Odds Range:
+
+2.5 to 5.0
+
+Optimization Goal:
+
+Maximize:
+
+Combined EV
+
+Avoid:
+
+Highly correlated selections
+Multiple picks from same match
+
+Allow:
+
+Conservative
+Balanced
+Aggressive modes
+
+Output:
+
+Combined Probability
+Combined Odds
+Expected Return
+Risk Rating
+9. Confidence Scoring System
+
+Calculate confidence using:
+
+Factors
+Model agreement
+Historical accuracy
+Team form stability
+Market consensus
+Odds movement
+
+Output:
+
+Very High
+High
+Medium
+Low
+10. Backtesting Framework
+
+Create a complete backtesting engine.
+
+Measure:
+
+Performance Metrics
+ROI
+Win Rate
+Yield
+Sharpe Ratio
+Drawdown
+Closing Line Value (CLV)
+
+Allow testing:
+
+Last 3 months
+Last 6 months
+Last 12 months
+Custom date ranges
+11. Dashboard
+
+Create a modern dashboard.
+
+Pages
+Overview
+Today's Value Bets
+Live Opportunities
+Accumulator Suggestions
+Match Analysis
+
+Display:
+
+Predicted Probabilities
+EV
+Odds Comparison
+Confidence Score
+Performance
+
+Display:
+
+Historical ROI
+Win Rate
+Bankroll Growth
+Odds Tracker
+
+Display:
+
+Odds movement charts
+Bookmaker comparison
+12. Alerts & Automation
+
+Implement:
+
+Telegram Alerts
+
+Send when:
+
+New EV bet appears
+Odds improve
+Accumulator generated
+Email Alerts
+
+Daily reports including:
+
+Top 5 value bets
+Top accumulator
+Profit tracking
+13. Database Design
+
+Design complete schemas for:
+
+Teams
+Matches
+Odds
+Markets
+Predictions
+Accumulators
+Bets
+Results
+Performance
+
+Generate SQL migrations.
+
+14. Recommended Technology Stack
+Backend
+Python
+FastAPI
+Data Collection
+Playwright
+Requests
+BeautifulSoup
+Machine Learning
+Scikit-Learn
+XGBoost
+LightGBM
+Database
+PostgreSQL
+Caching
+Redis
+Queue System
+Celery
+Frontend
+Next.js
+TypeScript
+Tailwind CSS
+Charts
+Recharts
+Deployment
+Docker
+Nginx
+VPS or AWS
+15. Deliverables
+
+Generate:
+
+Complete project architecture
+Folder structure
+Database schema
+API endpoints
+Backend code
+Frontend code
+Odds scraping modules
+Probability engine
+EV calculation engine
+Accumulator generator
+Dashboard UI
+Docker deployment files
+Testing framework
+CI/CD pipeline
+Documentation
+
+Provide production-quality code with explanations for every major module and implementation decision.
+
+This version will get Claude Code to produce something much closer to a professional betting analytics platform rather than a simple odds scraper with basic probability calculations. It also pushes Claude toward quantitative modeling, backtesting, and EV-based decision-making, which are far more important than simply finding high odds.
+
+Where do we fit something like bookmakers match odds to be the priority in the model analysis
+
+Bookmaker odds should not merely be another input alongside team form and statistics. In modern sports betting models, bookmaker odds are often the single most important predictor because they aggregate vast amounts of information, including public sentiment, professional bettors' activity, injuries, team news, weather, and information that your model may not directly observe.
+
+A robust betting intelligence system should treat bookmaker odds as the baseline market model, then search for situations where its own models can identify small but meaningful inefficiencies.
+
+Recommended Model Weighting
+
+Instead of:
+
+Model	Weight
+Market Odds	25%
+Poisson	25%
+Elo	20%
+ML	30%
+
+Consider:
+
+Model	Weight
+Market Odds	50-60%
+Team Strength (Elo)	15%
+Poisson Goals Model	10%
+Form Model	10%
+Machine Learning	10-15%
+
+Reason:
+
+Bookmakers spend millions creating efficient markets.
+Professional bettors continuously correct pricing mistakes.
+Market odds often outperform standalone predictive models.
+Your edge comes from finding where the market is slightly wrong, not completely wrong.
+Introduce a Market Efficiency Layer
+
+Before a match is considered a value bet:
+
+Step 1: Calculate Consensus Odds
+
+Gather odds from all bookmakers.
+
+Example:
+
+Bookmaker	Home	Draw	Away
+BetWay	2.10	3.30	3.40
+BetPawa	2.05	3.25	3.50
+PremierBet	2.15	3.20	3.45
+
+Consensus:
+
+Home: 2.10
+Draw: 3.25
+Away: 3.45
+Step 2: Remove Margin
+
+Convert to fair probabilities.
+
+This becomes your "market probability."
+
+Example:
+
+Outcome	Market Probability
+Home	46%
+Draw	29%
+Away	25%
+Step 3: Compare Against Internal Models
+
+Suppose:
+
+Outcome	Market	Your Model
+Home	46%	52%
+Draw	29%	26%
+Away	25%	22%
+
+Difference:
+
+Outcome	Edge
+Home	+6%
+Draw	-3%
+Away	-3%
+
+Now investigate why your model disagrees.
+
+Odds Movement Analysis (Critical)
+
+Many bettors ignore this, but it is one of the strongest signals.
+
+Track:
+
+Opening Odds
+
+Liverpool 2.10
+
+Current Odds
+
+Liverpool 1.80
+
+This indicates:
+
+Money is coming in on Liverpool.
+Sharp bettors may have identified value.
+The market agrees with a stronger Liverpool probability.
+
+Create a metric:
+
+Sharp Money Score
+=
+Opening Odds - Current Odds
+Bookmaker Priority Score
+
+Add a dedicated module:
+
+Inputs
+Consensus probability
+Odds movement
+Closing line trend
+Volume of bookmakers agreeing
+Market liquidity
+
+Output:
+
+Market Confidence Score
+0 - 100
+
+Example:
+
+Match	Score
+Arsenal vs Brighton	91
+Leeds vs Norwich	74
+Malawi vs Zambia	55
+
+Higher score means stronger market agreement.
+
+Use Odds as a Filter Before Full Analysis
+
+A better workflow is:
+
+1. Collect bookmaker odds
+        ↓
+2. Build consensus market probability
+        ↓
+3. Detect odds movement
+        ↓
+4. Run internal models
+        ↓
+5. Compare model vs market
+        ↓
+6. Calculate EV
+        ↓
+7. Rank opportunities
+        ↓
+8. Generate accumulator
+An Even Better Feature: Closing Line Value (CLV)
+
+The best long-term betting systems monitor whether their selections beat the closing market.
+
+Example:
+
+You bet:
+
+Over 2.5 @ 2.10
+
+Closing odds:
+
+Over 2.5 @ 1.85
+
+Your model found value before the market fully adjusted.
+
+This is often a stronger indicator of model quality than win rate.
+
+For your Claude Code project
+
+I would explicitly add a new section:
+
+Market Intelligence Engine (Highest Priority)
+
+Weight in Final Prediction: 55%
+
+Components:
+
+Consensus bookmaker probabilities
+Closing Line Value tracking
+Odds movement analysis
+Sharp money detection
+Market disagreement scoring
+Best-price bookmaker selection
+Arbitrage detection
+
+Rule:
+
+No bet recommendation should be generated unless it passes both the Market Intelligence Engine and the Expected Value Engine.
