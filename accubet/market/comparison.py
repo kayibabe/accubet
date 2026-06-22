@@ -19,6 +19,7 @@ from sqlalchemy.orm import Session
 
 from accubet.config import AppConfig
 from accubet.market.efficiency import market_confidence
+from accubet.market.movement import selection_movement
 from accubet.storage.models import Consensus, Match, OddsSnapshot, Prediction, ValueBet
 from accubet.value.ev import expected_value, implied_probability, value_pct
 
@@ -42,6 +43,7 @@ class ValueOpportunity:
     confidence: float       # 0-1
     n_books: int
     prob_source: str = "market"   # "ensemble" | "market"
+    steam_move: bool = False      # True when price shortened >5% since opening
 
     @property
     def passes(self) -> bool:  # filled against gates by the caller
@@ -113,6 +115,12 @@ def compare_match(
             conf = market_confidence(c.n_books, c.overround) / 100.0
             prob_source = "market"
 
+        # Steam-move detection: price shortened >5% since opening = sharp-money signal.
+        # Boost confidence slightly when the market movement agrees with our bet.
+        mov = selection_movement(session, match.id, c.market, c.selection, c.line)
+        steam = mov.is_steam if mov else False
+        conf_adj = min(1.0, conf + 0.05) if steam else conf
+
         opp = ValueOpportunity(
             match_id=match.id, home=home, away=away, kickoff=kickoff,
             market=c.market, selection=c.selection, line=c.line,
@@ -121,17 +129,17 @@ def compare_match(
             betway_odds=betway_odds, best_odds=c.best_odds,
             ev=expected_value(true_prob, price),
             value_pct=value_pct(true_prob, price),
-            confidence=conf, n_books=c.n_books, prob_source=prob_source,
+            confidence=conf_adj, n_books=c.n_books, prob_source=prob_source,
+            steam_move=steam,
         )
-        # Value gate: a genuine flag needs an INDEPENDENT price (Betway) beating our true
-        # probability, sufficient EV, a trustworthy consensus, and enough model/market
-        # confidence. "best"-sourced rows are shown for info but never pass the gate
-        # (best-of-N vs consensus-of-N just measures the market's own spread).
+        # Value gate: independent Betway price + sufficient EV + trustworthy consensus.
+        # Steam-adjusted confidence is used here, so a steam move can lift a borderline
+        # bet over the gate.
         opp._passes = (
             opp.price_source == "betway"
             and opp.ev > cfg.value.min_ev
             and c.n_books >= cfg.value.min_books_for_consensus
-            and conf >= cfg.value.min_confidence
+            and conf_adj >= cfg.value.min_confidence
         )
         opps.append(opp)
     return opps

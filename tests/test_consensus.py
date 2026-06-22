@@ -70,6 +70,93 @@ def test_build_consensus_produces_fair_probs(session):
     assert sum(r.fair_prob for r in rows) == pytest.approx(1.0)
 
 
+def _seed_steam_match(s: Session, home_open: float, home_close: float) -> Match:
+    """Create a minimal match with two ingestion snapshots for home selection.
+
+    Each of 3 bookmakers has an opening price and a later closing price so the
+    movement function can detect drift without any single-snapshot confusion.
+    """
+    from datetime import datetime
+    home = Team(api_team_id=50, name="SteamHome")
+    away = Team(api_team_id=51, name="SteamAway")
+    s.add_all([home, away])
+    s.flush()
+    match = Match(api_fixture_id=5001, home_team_id=home.id, away_team_id=away.id, status="NS")
+    s.add(match)
+    s.flush()
+
+    t_open = datetime(2025, 3, 1, 10, 0)
+    t_now = datetime(2025, 3, 1, 13, 0)
+
+    for book, (ho, hc) in {
+        "BookX": (home_open, home_close),
+        "BookY": (home_open * 1.01, home_close * 1.01),
+        "BookZ": (home_open * 0.99, home_close * 0.99),
+    }.items():
+        for sel, op_price, cl_price in [
+            ("home", ho, hc),
+            ("draw", 3.30, 3.30),
+            ("away", 3.40, 3.40),
+        ]:
+            s.add(OddsSnapshot(match_id=match.id, source="apifootball", bookmaker=book,
+                               market="match_winner", selection=sel, price=op_price,
+                               captured_at=t_open))
+            s.add(OddsSnapshot(match_id=match.id, source="apifootball", bookmaker=book,
+                               market="match_winner", selection=sel, price=cl_price,
+                               captured_at=t_now))
+    s.flush()
+    return match
+
+
+def test_steam_move_boosts_confidence(session):
+    from accubet.market.consensus import build_all_consensus
+
+    # Home price shortens from 2.15 to 1.90 (~11.6% drop) = clear steam move.
+    match = _seed_steam_match(session, home_open=2.15, home_close=1.90)
+    build_all_consensus(session, [match.id], min_books=1)
+    session.add(OddsSnapshot(match_id=match.id, source="betway", bookmaker="Betway",
+                             market="match_winner", selection="home", price=4.00))
+    session.flush()
+
+    cfg = get_config()
+    opps = compare_match(session, cfg, match)
+    home = next(o for o in opps if o.selection == "home")
+
+    assert home.steam_move is True
+    assert home.confidence <= 1.0
+
+
+def test_no_steam_when_price_stable(session):
+    from accubet.market.consensus import build_all_consensus
+
+    # Price barely moves: 2.10 -> 2.08 (~1% — well under the 5% steam threshold).
+    match = _seed_steam_match(session, home_open=2.10, home_close=2.08)
+    build_all_consensus(session, [match.id], min_books=1)
+    session.add(OddsSnapshot(match_id=match.id, source="betway", bookmaker="Betway",
+                             market="match_winner", selection="home", price=4.00))
+    session.flush()
+
+    cfg = get_config()
+    opps = compare_match(session, cfg, match)
+    home = next(o for o in opps if o.selection == "home")
+    assert home.steam_move is False
+
+
+def test_no_steam_when_single_snapshot_per_book(session):
+    """Single-ingest scenario (each book captured once) must not fire a false steam."""
+    match = _seed_match(session)   # 7 books × 1 snapshot each
+    from accubet.market.consensus import build_all_consensus
+    build_all_consensus(session, [match.id], min_books=1)
+    session.add(OddsSnapshot(match_id=match.id, source="betway", bookmaker="Betway",
+                             market="match_winner", selection="home", price=4.00))
+    session.flush()
+
+    cfg = get_config()
+    opps = compare_match(session, cfg, match)
+    home = next(o for o in opps if o.selection == "home")
+    assert home.steam_move is False   # no movement data → no false positive
+
+
 def test_comparison_flags_value_when_betway_beats_fair(session):
     match = _seed_match(session)
     build_consensus(session, match.id, min_books=1)

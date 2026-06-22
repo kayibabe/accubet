@@ -35,16 +35,34 @@ class Movement:
 def selection_movement(
     session: Session, match_id: int, market: str, selection: str, line: float | None
 ) -> Movement | None:
+    """Detect price movement by comparing each world-book's first vs latest snapshot.
+
+    Groups snapshots by bookmaker so that a market with many books each captured once
+    (which is typical after a single ingest run) returns None rather than a spurious
+    drift reading.  Returns a Movement whose prices are the average across all books
+    that have been captured at least twice.
+    """
     rows = session.execute(
         select(OddsSnapshot)
         .where(
             OddsSnapshot.match_id == match_id,
+            OddsSnapshot.source == "apifootball",   # world-book prices only
             OddsSnapshot.market == market,
             OddsSnapshot.selection == selection,
             OddsSnapshot.line == line,
         )
         .order_by(OddsSnapshot.captured_at.asc())
     ).scalars().all()
-    if not rows:
+
+    by_book: dict[str, list[float]] = {}
+    for r in rows:
+        by_book.setdefault(r.bookmaker, []).append(r.price)
+
+    # Only bookmakers with ≥2 captures have actual price history.
+    moving = [(prices[0], prices[-1]) for prices in by_book.values() if len(prices) >= 2]
+    if not moving:
         return None
-    return Movement(opening_odds=rows[0].price, current_odds=rows[-1].price)
+
+    opening = sum(p[0] for p in moving) / len(moving)
+    current = sum(p[1] for p in moving) / len(moving)
+    return Movement(opening_odds=opening, current_odds=current)

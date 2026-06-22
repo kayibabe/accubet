@@ -153,10 +153,12 @@ def scan(
         table.add_column("Val%", justify="right")
         table.add_column("Conf", justify="right")
         table.add_column("Bk", justify="right")
+        table.add_column("STM", justify="center")
 
         for i, o in enumerate(shown, 1):
             mark = "[green]*[/green]" if o._passes else ""
             line = f" {o.line}" if o.line is not None else ""
+            stm = "[cyan]S[/cyan]" if getattr(o, "steam_move", False) else ""
             table.add_row(
                 f"{i}{mark}",
                 f"{o.home} v {o.away}",
@@ -170,6 +172,7 @@ def scan(
                 f"{o.value_pct*100:+.1f}",
                 f"{o.confidence:.2f}",
                 str(o.n_books),
+                stm,
             )
         console.print(table)
         console.print(
