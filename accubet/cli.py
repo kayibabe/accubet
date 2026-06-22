@@ -304,6 +304,121 @@ def report() -> None:
 
 
 @app.command()
+def daily(
+    days: int = typer.Option(2, "--days", help="Days ahead to ingest (default: 2 = today + tomorrow)."),
+    back: int = typer.Option(1, "--back", help="Days back to fetch results for settlement (default: 1)."),
+    mode: str = typer.Option("balanced", "--mode", help="Accumulator mode: conservative|balanced|aggressive."),
+    no_settle: bool = typer.Option(False, "--no-settle", help="Skip the auto-settlement step."),
+    top: int = typer.Option(5, "--top", help="Top opportunities to show in summary."),
+) -> None:
+    """Full daily pipeline: ingest -> predict -> track -> settle -> summarise.
+
+    Runs every step in sequence so one command keeps the system current.
+    Schedule it with Task Scheduler (Windows) or cron (Linux/macOS).
+    """
+    cfg = get_config()
+    setup_logging(cfg.secrets.log_level)
+    _init_db()
+
+    with session_scope() as session:
+        client = ApiFootballClient(cfg, session)
+        connector = BetwayMalawiConnector(cfg) if cfg.local_book.enabled else None
+
+        # --- 1. Ingest ---------------------------------------------------
+        console.rule("[bold cyan]1 / 4  Ingest[/bold cyan]")
+        back_dates = [(date.today() - timedelta(days=i)).isoformat() for i in range(back, 0, -1)]
+        fwd_dates = _dates(None, days)
+        total_new = 0
+        for d in back_dates + fwd_dates:
+            past = d < date.today().isoformat()
+            matches, rep = ingest_fixtures(session, cfg, client, d)
+            if not past and matches:
+                ingest_odds(session, cfg, client, matches, rep)
+            if connector and not past and matches:
+                ingest_local_odds(session, connector, matches)
+            built = build_all_consensus(session, [m.id for m in matches], min_books=1)
+            total_new += rep.new_matches
+            tag = "past" if past else "upcoming"
+            console.print(
+                f"  {d} [{tag}]  fixtures={rep.fixtures_seen} new={rep.new_matches}"
+                + (f" consensus={built}" if not past else "")
+            )
+        used = requests_used_today(session)
+        console.print(
+            f"  [dim]quota {used}/{cfg.apifootball.daily_request_limit} used "
+            f"({remaining(session, cfg)} left)[/dim]"
+        )
+
+        # --- 2. Predict --------------------------------------------------
+        console.rule("[bold cyan]2 / 4  Predict[/bold cyan]")
+        match_ids = _upcoming_match_ids(session)
+        if match_ids:
+            n_preds = run_predictions(session, cfg, match_ids)
+            console.print(
+                f"  {n_preds} prediction(s) stored across {len(match_ids)} upcoming match(es)."
+            )
+        else:
+            console.print("  [dim]No upcoming matches with consensus — skipping.[/dim]")
+
+        # --- 3. Track ----------------------------------------------------
+        console.rule("[bold cyan]3 / 4  Track[/bold cyan]")
+        n_singles = n_acc = 0
+        passers: list = []
+        if match_ids:
+            opps = scan_value(session, cfg, match_ids)
+            persist_value_bets(session, opps)
+            n_singles = log_singles(session, cfg, opps)
+            tickets = build_accumulators(opps, cfg, mode)
+            n_acc = log_accumulators(session, cfg, tickets)
+            passers = [o for o in opps if o._passes]
+            console.print(
+                f"  {len(opps)} opportunities | {len(passers)} pass gates | "
+                f"{n_singles} new single(s) | {n_acc} new accumulator(s)"
+            )
+            for o in passers[:top]:
+                line = f" {o.line}" if o.line is not None else ""
+                src = "[green]BW[/green]" if o.price_source == "betway" else "best"
+                console.print(
+                    f"    [green]*[/green] {o.home} v {o.away}  "
+                    f"{o.market} {o.selection}{line}  "
+                    f"true={o.fair_prob:.0%}  @{o.price:.2f} ({src})  "
+                    f"EV=[bold green]{o.ev * 100:+.1f}%[/bold green]"
+                )
+            for tier, t in tickets.items():
+                if t:
+                    legs = " + ".join(
+                        f"{lg.selection}@{lg.odds:.2f}" for lg in t.legs
+                    )
+                    console.print(
+                        f"    [dim]{tier}[/dim] odds={t.combined_odds:.2f} "
+                        f"EV={t.ev * 100:+.1f}%  [{legs}]"
+                    )
+        else:
+            console.print("  [dim]No upcoming matches — nothing to track.[/dim]")
+
+        # --- 4. Settle ---------------------------------------------------
+        if not no_settle:
+            console.rule("[bold cyan]4 / 4  Settle[/bold cyan]")
+            result = settle_bets(session, cfg)
+            if result["settled"]:
+                console.print(f"  Settled {result['settled']} tracked bet(s).")
+                rep_out = perf_report(session)
+                ov = rep_out["overall"]
+                if ov.settled:
+                    console.print(
+                        f"  Lifetime: {ov.settled} settled | roi={_pct(ov.roi)} | "
+                        f"win%={_rate(ov.win_rate)} | pnl={ov.pnl:+.2f}"
+                    )
+            else:
+                console.print("  [dim]Nothing to settle yet.[/dim]")
+        else:
+            console.rule("[dim]4 / 4  Settle (skipped)[/dim]")
+
+    console.print("\n[bold green]Done.[/bold green]  "
+                  f"{len(passers)} gate-passing bet(s) tracked today.")
+
+
+@app.command()
 def backtest(
     months: int = typer.Option(6, "--months", help="Months back from today (default: 6)."),
     start: str = typer.Option(None, "--start", help="Start date YYYY-MM-DD."),
@@ -330,7 +445,7 @@ def backtest(
             return f"[{color}]{v * 100:+.1f}[/{color}]"
 
         table = Table(
-            title=f"Walk-forward  {start_d} → {end_d}  (window={window}d)",
+            title=f"Walk-forward  {start_d} to {end_d}  (window={window}d)",
         )
         for col, just in [
             ("Period start", "left"), ("Bets", "right"), ("Staked", "right"),

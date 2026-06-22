@@ -62,7 +62,15 @@ copy .env.example .env
 .\.venv\Scripts\accubet.exe settle
 .\.venv\Scripts\accubet.exe report                     # per-market + overall ROI/win-rate
 
-# 8. Walk-forward backtest — rolling 30-day windows over the last 6 months
+# 8. Full daily pipeline (ingest + predict + track + settle in one shot)
+.\.venv\Scripts\accubet.exe daily
+.\.venv\Scripts\accubet.exe daily --back 2 --days 3   # wider window
+.\.venv\Scripts\accubet.exe daily --no-settle          # skip grading step
+
+# Schedule it (Windows Task Scheduler — run once per day at 07:00)
+# schtasks /create /tn "AccuBet Daily" /tr "D:\WebApps\accubet\.venv\Scripts\accubet.exe daily" /sc daily /st 07:00
+
+# 9. Walk-forward backtest — rolling 30-day windows over the last 6 months
 .\.venv\Scripts\accubet.exe backtest
 .\.venv\Scripts\accubet.exe backtest --months 3 --window 14    # fortnightly, last quarter
 .\.venv\Scripts\accubet.exe backtest --start 2024-08-01 --end 2025-01-31
