@@ -303,5 +303,77 @@ def report() -> None:
                           "then `accubet settle` after kickoff.[/dim]")
 
 
+@app.command()
+def backtest(
+    months: int = typer.Option(6, "--months", help="Months back from today (default: 6)."),
+    start: str = typer.Option(None, "--start", help="Start date YYYY-MM-DD."),
+    end: str = typer.Option(None, "--end", help="End date YYYY-MM-DD (default: today)."),
+    window: int = typer.Option(30, "--window", help="Rolling window in days (default: 30)."),
+) -> None:
+    """Walk-forward performance analysis over the settled paper-bet history."""
+    from accubet.backtest.walkforward import months_ago, overall_metrics, run_walkforward
+
+    cfg = get_config()
+    setup_logging(cfg.secrets.log_level)
+
+    end_d = datetime.strptime(end, "%Y-%m-%d").date() if end else date.today()
+    start_d = datetime.strptime(start, "%Y-%m-%d").date() if start else months_ago(end_d, months)
+
+    with session_scope() as session:
+        windows = run_walkforward(session, start_d, end_d, window_days=window)
+        overall = overall_metrics(session, start_d, end_d)
+
+        def _roi_cell(v: float | None) -> str:
+            if v is None:
+                return "-"
+            color = "green" if v > 0 else ("red" if v < 0 else "white")
+            return f"[{color}]{v * 100:+.1f}[/{color}]"
+
+        table = Table(
+            title=f"Walk-forward  {start_d} → {end_d}  (window={window}d)",
+        )
+        for col, just in [
+            ("Period start", "left"), ("Bets", "right"), ("Staked", "right"),
+            ("P&L", "right"), ("ROI%", "right"), ("Win%", "right"),
+            ("Sharpe", "right"), ("MaxDD", "right"),
+            ("CLV avg", "right"), ("CLV+%", "right"),
+        ]:
+            table.add_column(col, justify=just)
+
+        for wr in windows:
+            table.add_row(
+                str(wr.period_start),
+                str(wr.n_bets),
+                f"{wr.staked:.0f}",
+                f"{wr.pnl:+.2f}",
+                _roi_cell(wr.roi),
+                _rate(wr.win_rate),
+                f"{wr.sharpe:.2f}" if wr.sharpe is not None else "-",
+                f"{wr.max_dd:.2f}",
+                f"{wr.clv_mean * 100:+.2f}%" if wr.clv_mean is not None else "-",
+                _rate(wr.clv_positive_pct),
+            )
+        console.print(table)
+
+        o = overall
+        clv_str = (
+            f"clv={o.clv_mean * 100:+.2f}% ({o.n_with_clv} bets)"
+            if o.clv_mean is not None
+            else f"clv=- ({o.n_with_clv} bets with CLV data)"
+        )
+        console.print(
+            f"\n[bold]Overall[/bold]  {o.n_bets} bets  staked={o.staked:.0f}  "
+            f"pnl={o.pnl:+.2f}  roi={_pct(o.roi)}  win%={_rate(o.win_rate)}  "
+            f"sharpe={'%.2f' % o.sharpe if o.sharpe is not None else '-'}  "
+            f"max-drawdown={o.max_dd:.2f}  {clv_str}"
+        )
+
+        if o.n_bets == 0:
+            console.print(
+                "[dim]No settled bets in this range. Run `accubet ingest` then "
+                "`accubet settle` after matches finish.[/dim]"
+            )
+
+
 if __name__ == "__main__":
     app()

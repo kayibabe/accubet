@@ -1,5 +1,7 @@
 # AccuBet — Football Value-Betting Intelligence Engine
 
+[![CI](https://github.com/kayibabe/accubet/actions/workflows/ci.yml/badge.svg)](https://github.com/kayibabe/accubet/actions/workflows/ci.yml)
+
 A **modeling-first** engine that finds *value bets* — spots where bookmaker odds misprice
 the true probability of an outcome — and only flags a bet when its **expected value** clears
 a threshold. It is **not** a winner predictor: the edge comes from probability
@@ -11,8 +13,11 @@ hunting small, exploitable disagreements. **Closing Line Value (CLV)** is the re
 
 ## Status
 
-Phase 0–1 (ingestion + Market Intelligence Engine). See the approved plan for the full
-roadmap. No UI yet — everything runs from the CLI against a local SQLite database.
+Phase 0–5 complete (ingestion → market intelligence → models → value/tracking → backtest).
+No UI yet — everything runs from the CLI against a local SQLite database.
+
+> Branch protection (GitHub Settings → Branches → main): require CI to pass before merge,
+> require at least one review, disallow force-pushes.
 
 ## Data sources
 
@@ -57,6 +62,11 @@ copy .env.example .env
 .\.venv\Scripts\accubet.exe settle
 .\.venv\Scripts\accubet.exe report                     # per-market + overall ROI/win-rate
 
+# 8. Walk-forward backtest — rolling 30-day windows over the last 6 months
+.\.venv\Scripts\accubet.exe backtest
+.\.venv\Scripts\accubet.exe backtest --months 3 --window 14    # fortnightly, last quarter
+.\.venv\Scripts\accubet.exe backtest --start 2024-08-01 --end 2025-01-31
+
 # Check remaining API quota for today
 .\.venv\Scripts\accubet.exe quota
 ```
@@ -78,5 +88,5 @@ accubet/
   models/      goals_poisson · ratings_glicko · form · ensemble · predictor
   value/       ev · accumulator · staking
   tracking/    tracked_bets · performance
-  backtest/    (Phase 5) walkforward · metrics
+  backtest/    walkforward · metrics   (Phase 5 — CLV, Sharpe, drawdown, rolling windows)
 ```
