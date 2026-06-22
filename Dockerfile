@@ -14,10 +14,6 @@ RUN pip install --no-cache-dir -e "."
 # Data directory for the SQLite database
 RUN mkdir -p /data
 
-# Minimal HTTP health server so Fly's healthcheck passes
-# The real work is done via `fly ssh console` or Fly scheduled machines
-COPY docker/healthcheck.py /app/docker/healthcheck.py
-
 EXPOSE 8080
 
-CMD ["python", "docker/healthcheck.py"]
+CMD ["uvicorn", "accubet.api.app:app", "--host", "0.0.0.0", "--port", "8080"]

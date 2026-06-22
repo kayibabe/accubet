@@ -616,5 +616,35 @@ def calibrate(
     )
 
 
+@app.command()
+def serve(
+    host: str = typer.Option("127.0.0.1", "--host", help="Bind host (use 0.0.0.0 for LAN)."),
+    port: int = typer.Option(8080, "--port", help="Port to listen on."),
+    reload: bool = typer.Option(False, "--reload", help="Auto-reload on code changes (dev mode)."),
+) -> None:
+    """Start the AccuBet web dashboard and REST API.
+
+    Visit http://localhost:8080 to open the dashboard.
+    API docs are at http://localhost:8080/api/docs.
+    """
+    try:
+        import uvicorn
+    except ImportError:
+        console.print("[red]uvicorn is not installed. Run: pip install uvicorn[standard][/red]")
+        raise typer.Exit(1)
+    cfg = get_config()
+    setup_logging(cfg.secrets.log_level)
+    _init_db()
+    console.print(f"[cyan]AccuBet dashboard[/cyan]  http://{host}:{port}")
+    console.print(f"[dim]API docs: http://{host}:{port}/api/docs[/dim]")
+    uvicorn.run(
+        "accubet.api.app:app",
+        host=host,
+        port=port,
+        reload=reload,
+        log_level=cfg.secrets.log_level.lower(),
+    )
+
+
 if __name__ == "__main__":
     app()
