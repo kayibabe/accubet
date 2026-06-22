@@ -41,6 +41,8 @@ class Secrets(BaseSettings):
         default="sqlite:///data/accubet.db", alias="ACCUBET_DATABASE_URL"
     )
     log_level: str = Field(default="INFO", alias="ACCUBET_LOG_LEVEL")
+    telegram_bot_token: str = Field(default="", alias="TELEGRAM_BOT_TOKEN")
+    telegram_chat_id: str = Field(default="", alias="TELEGRAM_CHAT_ID")
 
 
 # --- YAML-backed tunables (validated, with sane defaults so the app runs bare) ---

@@ -117,6 +117,7 @@ def scan(
     all_markets: bool = typer.Option(
         False, "--all-markets", help="Include all markets/lines (bypass liquidity filter)."
     ),
+    notify: bool = typer.Option(False, "--notify", help="Send Telegram alert for gate-passers."),
 ) -> None:
     """Rank value opportunities: fair consensus probability vs the price you can take."""
     cfg = get_config()
@@ -175,6 +176,15 @@ def scan(
             f"[dim]{len(opps)} opportunities | {sum(o._passes for o in opps)} pass gates | "
             f"{stored} saved to value_bets.[/dim]"
         )
+        if notify:
+            from accubet.alerts.telegram import notify_scan
+            passers_list = [o for o in opps if o._passes]
+            if notify_scan(cfg, passers_list):
+                console.print("[dim]Telegram alert sent.[/dim]")
+            elif not cfg.secrets.telegram_bot_token:
+                console.print(
+                    "[yellow]--notify set but TELEGRAM_BOT_TOKEN not configured in .env[/yellow]"
+                )
 
 
 @app.command()
@@ -413,6 +423,14 @@ def daily(
                 console.print("  [dim]Nothing to settle yet.[/dim]")
         else:
             console.rule("[dim]4 / 4  Settle (skipped)[/dim]")
+
+    # --- Telegram alert -----------------------------------------------
+    from accubet.alerts.telegram import notify_daily
+    sent = notify_daily(cfg, passers, tickets if match_ids else {}, used)
+    if sent:
+        console.print("[dim]Telegram alert sent.[/dim]")
+    elif cfg.secrets.telegram_bot_token:
+        console.print("[dim]Telegram configured but alert failed (check logs).[/dim]")
 
     console.print("\n[bold green]Done.[/bold green]  "
                   f"{len(passers)} gate-passing bet(s) tracked today.")
