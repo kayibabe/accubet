@@ -21,6 +21,7 @@ from accubet.models import goals_poisson as poisson
 from accubet.models.ensemble import (
     ensemble, market_to_groups, onex2_to_groups, poisson_to_groups,
 )
+from accubet.models.ml import fit_ml, predict_ml
 from accubet.models.ratings_glicko import fit_ratings, ratings_to_1x2
 from accubet.storage.models import Consensus, Match, Prediction, Result
 
@@ -32,16 +33,19 @@ class CompetitionModels:
     strengths: object | None
     ratings: dict
     matches_chrono: list[tuple]
+    ml_model: object | None = None
 
     def internal_groups(self, home_id: int, away_id: int, ou_lines: tuple[float, ...]) -> dict:
         goals = poisson.predict(self.strengths, home_id, away_id, ou_lines) if self.strengths else None
         glicko = ratings_to_1x2(self.ratings, home_id, away_id) if self.ratings else None
         hp = form_mod.points_per_game(self.matches_chrono, home_id)
         ap = form_mod.points_per_game(self.matches_chrono, away_id)
+        ml = predict_ml(self.ml_model, home_id, away_id)
         return {
             "goals": poisson_to_groups(goals),
             "glicko": onex2_to_groups(glicko),
             "form": onex2_to_groups(form_mod.form_to_1x2(hp, ap)),
+            "ml": onex2_to_groups(ml),
         }
 
 
@@ -63,12 +67,13 @@ def build_competition_models(session: Session, competition_id: int | None) -> Co
         strengths=poisson.fit_strengths(chrono),
         ratings=fit_ratings(chrono),
         matches_chrono=chrono,
+        ml_model=fit_ml(chrono),
     )
 
 
 def _weights(cfg: AppConfig) -> dict[str, float]:
     mw = cfg.model_weights
-    return {"market": mw.market, "goals": mw.goals, "glicko": mw.glicko, "form": mw.form}
+    return {"market": mw.market, "goals": mw.goals, "glicko": mw.glicko, "form": mw.form, "ml": mw.ml}
 
 
 def predict_match(session: Session, cfg: AppConfig, match: Match, comp: CompetitionModels,
