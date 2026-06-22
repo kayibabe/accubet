@@ -23,6 +23,7 @@ from accubet.ingestion.pipeline import (
     ingest_fixtures, ingest_history, ingest_local_odds, ingest_odds,
 )
 from accubet.ingestion.quota import QuotaExceeded, remaining, requests_used_today
+from accubet.ingestion.scrapers.betpawa import BetPawaMalawiConnector
 from accubet.ingestion.scrapers.betway import BetwayMalawiConnector
 from accubet.logging_setup import setup_logging
 from accubet.market.comparison import persist_value_bets, scan as scan_value
@@ -84,15 +85,19 @@ def ingest(
 
     with session_scope() as session:
         client = ApiFootballClient(cfg, session)
-        connector = BetwayMalawiConnector(cfg) if cfg.local_book.enabled else None
+        connectors = []
+        if cfg.local_book.enabled:
+            connectors.append(BetwayMalawiConnector(cfg))
+            connectors.append(BetPawaMalawiConnector(cfg))
 
         for d in _dates(date_, days):
             matches, report = ingest_fixtures(session, cfg, client, d, force=force)
             if not no_odds and matches:
                 ingest_odds(session, cfg, client, matches, report)
             local_n = 0
-            if connector and matches:
-                local_n = ingest_local_odds(session, connector, matches)
+            for connector in connectors:
+                if matches:
+                    local_n += ingest_local_odds(session, connector, matches)
             built = build_all_consensus(session, [m.id for m in matches], min_books=1)
 
             console.print(
@@ -167,7 +172,7 @@ def scan(
                 f"{o.fair_prob:.0%}",
                 "ens" if o.prob_source == "ensemble" else "mkt",
                 f"{o.price:.2f}",
-                o.price_source,
+                {"betway": "BW", "betpawa": "BP"}.get(o.price_source, o.price_source),
                 f"{o.ev*100:+.1f}",
                 f"{o.value_pct*100:+.1f}",
                 f"{o.confidence:.2f}",
@@ -335,7 +340,10 @@ def daily(
 
     with session_scope() as session:
         client = ApiFootballClient(cfg, session)
-        connector = BetwayMalawiConnector(cfg) if cfg.local_book.enabled else None
+        daily_connectors = []
+        if cfg.local_book.enabled:
+            daily_connectors.append(BetwayMalawiConnector(cfg))
+            daily_connectors.append(BetPawaMalawiConnector(cfg))
 
         # --- 1. Ingest ---------------------------------------------------
         console.rule("[bold cyan]1 / 4  Ingest[/bold cyan]")
@@ -347,8 +355,9 @@ def daily(
             matches, rep = ingest_fixtures(session, cfg, client, d)
             if not past and matches:
                 ingest_odds(session, cfg, client, matches, rep)
-            if connector and not past and matches:
-                ingest_local_odds(session, connector, matches)
+            if not past and matches:
+                for connector in daily_connectors:
+                    ingest_local_odds(session, connector, matches)
             built = build_all_consensus(session, [m.id for m in matches], min_books=1)
             total_new += rep.new_matches
             tag = "past" if past else "upcoming"
@@ -390,7 +399,8 @@ def daily(
             )
             for o in passers[:top]:
                 line = f" {o.line}" if o.line is not None else ""
-                src = "[green]BW[/green]" if o.price_source == "betway" else "best"
+                src_label = {"betway": "BW", "betpawa": "BP"}.get(o.price_source, o.price_source)
+                src = f"[green]{src_label}[/green]" if o.price_source != "best" else "best"
                 console.print(
                     f"    [green]*[/green] {o.home} v {o.away}  "
                     f"{o.market} {o.selection}{line}  "

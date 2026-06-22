@@ -52,16 +52,28 @@ class ValueOpportunity:
     _passes: bool = False
 
 
-def _betway_prices(session: Session, match_id: int) -> dict[tuple, float]:
+_LOCAL_SOURCES = {"betway", "betpawa"}
+
+
+def _local_prices(session: Session, match_id: int) -> dict[tuple, tuple[float, str]]:
+    """Return the best (highest) local-book price per selection across all local books.
+
+    Returns {(market, selection, line): (price, source_key)}.
+    """
     rows = session.execute(
         select(OddsSnapshot)
-        .where(OddsSnapshot.match_id == match_id, OddsSnapshot.source == "betway")
+        .where(
+            OddsSnapshot.match_id == match_id,
+            OddsSnapshot.source.in_(_LOCAL_SOURCES),
+        )
         .order_by(OddsSnapshot.captured_at.asc())
     ).scalars().all()
-    prices: dict[tuple, float] = {}
+    best: dict[tuple, tuple[float, str]] = {}
     for r in rows:
-        prices[(r.market, r.selection, r.line)] = r.price  # latest wins (asc order)
-    return prices
+        key = (r.market, r.selection, r.line)
+        if key not in best or r.price > best[key][0]:
+            best[key] = (r.price, r.source)
+    return best
 
 
 def _is_liquid(cfg: AppConfig, market: str, line: float | None) -> bool:
@@ -82,7 +94,7 @@ def compare_match(
     if not consensus_rows:
         return []
 
-    betway = _betway_prices(session, match.id)
+    local = _local_prices(session, match.id)
     preds = {
         (p.market, p.selection, p.line): p
         for p in session.execute(
@@ -99,8 +111,10 @@ def compare_match(
     for c in consensus_rows:
         if restrict and not _is_liquid(cfg, c.market, c.line):
             continue
-        betway_odds = betway.get((c.market, c.selection, c.line))
-        price = betway_odds if betway_odds else c.best_odds
+        local_entry = local.get((c.market, c.selection, c.line))
+        local_odds = local_entry[0] if local_entry else None
+        local_source = local_entry[1] if local_entry else None
+        price = local_odds if local_odds else c.best_odds
         if not price or price <= 1.0:
             continue
 
@@ -125,18 +139,17 @@ def compare_match(
             match_id=match.id, home=home, away=away, kickoff=kickoff,
             market=c.market, selection=c.selection, line=c.line,
             fair_prob=true_prob, price=price,
-            price_source="betway" if betway_odds else "best",
-            betway_odds=betway_odds, best_odds=c.best_odds,
+            price_source=local_source if local_odds else "best",
+            betway_odds=local_odds if local_source == "betway" else None,
+            best_odds=c.best_odds,
             ev=expected_value(true_prob, price),
             value_pct=value_pct(true_prob, price),
             confidence=conf_adj, n_books=c.n_books, prob_source=prob_source,
             steam_move=steam,
         )
-        # Value gate: independent Betway price + sufficient EV + trustworthy consensus.
-        # Steam-adjusted confidence is used here, so a steam move can lift a borderline
-        # bet over the gate.
+        # Value gate: local-book price available + sufficient EV + trustworthy consensus.
         opp._passes = (
-            opp.price_source == "betway"
+            local_odds is not None
             and opp.ev > cfg.value.min_ev
             and c.n_books >= cfg.value.min_books_for_consensus
             and conf_adj >= cfg.value.min_confidence

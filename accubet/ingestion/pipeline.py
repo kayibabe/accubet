@@ -164,8 +164,11 @@ def ingest_odds(
 
 
 def ingest_local_odds(session: Session, connector, matches: list[Match]) -> int:
-    """Store local-book (e.g. Betway) odds as snapshots. Deduped so repeated runs of a
-    static manual file don't pile up identical rows."""
+    """Store local-book odds as snapshots, keyed by connector.source_key.
+
+    Deduped so repeated runs don't pile up identical rows.
+    """
+    source = getattr(connector, "source_key", "local")
     stored = 0
     for match in matches:
         for row in connector.fetch_match_odds(match):
@@ -174,7 +177,7 @@ def ingest_local_odds(session: Session, connector, matches: list[Match]) -> int:
             exists = session.execute(
                 select(OddsSnapshot.id).where(
                     OddsSnapshot.match_id == match.id,
-                    OddsSnapshot.source == "betway",
+                    OddsSnapshot.source == source,
                     OddsSnapshot.market == row["market"],
                     OddsSnapshot.selection == row["selection"],
                     OddsSnapshot.line == row.get("line"),
@@ -186,7 +189,7 @@ def ingest_local_odds(session: Session, connector, matches: list[Match]) -> int:
             session.add(
                 OddsSnapshot(
                     match_id=match.id,
-                    source="betway",
+                    source=source,
                     bookmaker=row.get("bookmaker", connector.name),
                     market=row["market"],
                     selection=row["selection"],

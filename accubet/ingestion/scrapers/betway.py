@@ -63,6 +63,7 @@ def _tokens(name: str) -> set[str]:
 
 class BetwayMalawiConnector(LocalBookConnector):
     name = "Betway Malawi"
+    source_key = "betway"
 
     def __init__(self, cfg: AppConfig, cache_ttl_seconds: int = 900):
         self.cfg = cfg

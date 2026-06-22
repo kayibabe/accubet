@@ -23,6 +23,7 @@ log = get_logger(__name__)
 
 class LocalBookConnector(ABC):
     name: str = "local"
+    source_key: str = "local"  # stored as OddsSnapshot.source; must be unique per book
 
     @abstractmethod
     def fetch_match_odds(self, match: Any) -> list[dict]:
