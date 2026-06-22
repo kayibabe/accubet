@@ -85,6 +85,7 @@ def log_singles(session: Session, cfg: AppConfig, opps: list) -> int:
             kind="single", match_id=o.match_id, market=o.market, selection=o.selection,
             line=o.line, book=o.price_source, odds=o.price, ev=o.ev,
             confidence=o.confidence, stake=cfg.tracking.paper_stake,
+            predicted_prob=o.fair_prob,
         ))
         stored += 1
     session.flush()

@@ -6,7 +6,7 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import Iterator
 
-from sqlalchemy import create_engine, event
+from sqlalchemy import create_engine, event, text
 from sqlalchemy.engine import Engine, make_url
 from sqlalchemy.orm import Session, sessionmaker
 
@@ -46,10 +46,22 @@ def get_engine() -> Engine:
     return _engine
 
 
+def _apply_migrations(engine: Engine) -> None:
+    """Lightweight ALTER TABLE migrations for columns added after initial deploy."""
+    if engine.dialect.name != "sqlite":
+        return
+    with engine.connect() as conn:
+        cols = {row[1] for row in conn.execute(text("PRAGMA table_info(tracked_bets)"))}
+        if "predicted_prob" not in cols:
+            conn.execute(text("ALTER TABLE tracked_bets ADD COLUMN predicted_prob REAL"))
+            conn.commit()
+
+
 def init_db() -> None:
-    """Create all tables if they don't exist."""
+    """Create all tables if they don't exist, then apply migrations."""
     engine = get_engine()
     Base.metadata.create_all(engine)
+    _apply_migrations(engine)
 
 
 @contextmanager

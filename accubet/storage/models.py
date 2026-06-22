@@ -204,6 +204,7 @@ class TrackedBet(Base):
     pnl: Mapped[float | None] = mapped_column(Float, nullable=True)
     closing_odds: Mapped[float | None] = mapped_column(Float, nullable=True)
     clv: Mapped[float | None] = mapped_column(Float, nullable=True)
+    predicted_prob: Mapped[float | None] = mapped_column(Float, nullable=True)
 
 
 class Bet(Base):

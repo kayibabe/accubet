@@ -511,5 +511,100 @@ def backtest(
             )
 
 
+@app.command()
+def calibrate(
+    months: int = typer.Option(6, "--months", help="Months of settled bets to analyse (default: 6)."),
+    bins: int = typer.Option(10, "--bins", help="Number of probability bins for the reliability curve."),
+    market: str = typer.Option(None, "--market", help="Filter to a single market, e.g. match_winner."),
+) -> None:
+    """Model calibration: Brier score + reliability curve for settled paper bets.
+
+    Requires bets to have been logged with `accubet track` (which stores predicted_prob).
+    Calibration tells you whether the model is over- or under-confident at each probability level.
+    """
+    from accubet.backtest.calibration import calibration_summary
+    from accubet.backtest.walkforward import months_ago
+    from accubet.storage.models import TrackedBet
+
+    cfg = get_config()
+    setup_logging(cfg.secrets.log_level)
+
+    end_d = date.today()
+    start_d = months_ago(end_d, months)
+
+    with session_scope() as session:
+        q = select(TrackedBet).where(
+            TrackedBet.settled == True,  # noqa: E712
+            TrackedBet.kind == "single",
+            TrackedBet.predicted_prob.is_not(None),
+            TrackedBet.placed_at >= datetime.combine(start_d, datetime.min.time()),
+        )
+        if market:
+            q = q.where(TrackedBet.market == market)
+        bets = list(session.execute(q).scalars().all())
+
+    if not bets:
+        console.print(
+            "[yellow]No settled bets with calibration data found.[/yellow]\n"
+            "[dim]Calibration data is stored for bets tracked after this upgrade. "
+            "Once you have settled bets, run this command again.[/dim]"
+        )
+        raise typer.Exit()
+
+    probs = [b.predicted_prob for b in bets]
+    outcomes = [1 if b.result == "win" else 0 for b in bets]
+
+    summary = calibration_summary(probs, outcomes)
+    bs = summary["brier_score"]
+    mace = summary["mace"]
+    curve = summary["curve"]
+
+    market_label = f" [{market}]" if market else ""
+    console.print(
+        f"\n[bold]Calibration{market_label}[/bold]  "
+        f"{summary['n']} settled bets  "
+        f"period {start_d} to {end_d}"
+    )
+    console.print(
+        f"  Brier score : [bold]{bs:.4f}[/bold]  "
+        f"[dim](0 = perfect, 0.25 = random 50/50 guess)[/dim]"
+    )
+    console.print(
+        f"  Mean abs cal error: [bold]{mace:.4f}[/bold]  "
+        f"[dim](how far off mean predicted prob is from actual win rate per bin)[/dim]"
+    )
+
+    if not curve:
+        raise typer.Exit()
+
+    table = Table(title="Reliability curve (predicted prob vs actual win rate)")
+    table.add_column("Bin", justify="center")
+    table.add_column("Mean pred%", justify="right")
+    table.add_column("Actual%", justify="right")
+    table.add_column("Diff", justify="right")
+    table.add_column("N", justify="right")
+    table.add_column("Bar", justify="left")
+
+    for b in curve:
+        diff = b.actual_freq - b.mean_pred
+        color = "green" if abs(diff) < 0.05 else ("yellow" if abs(diff) < 0.10 else "red")
+        # ASCII bar for actual freq (20 chars wide)
+        bar_len = round(b.actual_freq * 20)
+        bar = "[green]" + "#" * bar_len + "[/green]" + "." * (20 - bar_len)
+        table.add_row(
+            f"{b.bin_mid:.0%}",
+            f"{b.mean_pred:.1%}",
+            f"{b.actual_freq:.1%}",
+            f"[{color}]{diff:+.1%}[/{color}]",
+            str(b.n),
+            bar,
+        )
+    console.print(table)
+    console.print(
+        "[dim]Green diff = well-calibrated (<5pp), yellow = slight over/under-confidence, "
+        "red = poorly calibrated (>10pp).[/dim]"
+    )
+
+
 if __name__ == "__main__":
     app()
