@@ -23,7 +23,7 @@ import json
 import re
 import time
 import unicodedata
-from datetime import datetime, timezone
+from datetime import timezone
 from typing import Any
 
 import requests

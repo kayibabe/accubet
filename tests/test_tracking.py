@@ -49,7 +49,7 @@ def test_value_tier_lands_in_band():
     v = tickets["value"]
     assert v is not None
     assert 3.0 <= v.combined_odds <= 5.0
-    assert len({l.match_id for l in v.legs}) == len(v.legs)  # no two legs same match
+    assert len({leg.match_id for leg in v.legs}) == len(v.legs)  # no two legs same match
 
 
 def test_banker_tier_high_strike_low_odds():

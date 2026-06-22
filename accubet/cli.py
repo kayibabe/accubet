@@ -256,7 +256,7 @@ def track(mode: str = typer.Option("balanced", "--mode", help="conservative|bala
             if t is None:
                 console.print(f"  [dim]{tier} tier: no qualifying ticket today.[/dim]")
                 continue
-            legs = " + ".join(f"{l.home} v {l.away}: {l.selection}@{l.odds:.2f}" for l in t.legs)
+            legs = " + ".join(f"{leg.home} v {leg.away}: {leg.selection}@{leg.odds:.2f}" for leg in t.legs)
             console.print(
                 f"  [bold]{tier}[/bold] odds={t.combined_odds:.2f} prob={t.combined_prob:.0%} "
                 f"EV={t.ev*100:+.1f}% risk={t.risk_rating}\n    {legs}"

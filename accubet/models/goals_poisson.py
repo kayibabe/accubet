@@ -45,11 +45,19 @@ def fit_strengths(matches: list[tuple[int, int, int, int]]) -> Strengths | None:
     if avg_home <= 0 or avg_away <= 0:
         return None
 
-    hs: dict[int, int] = {}; hc: dict[int, int] = {}; hp: dict[int, int] = {}
-    as_: dict[int, int] = {}; ac: dict[int, int] = {}; ap: dict[int, int] = {}
+    hs: dict[int, int] = {}
+    hc: dict[int, int] = {}
+    hp: dict[int, int] = {}
+    as_: dict[int, int] = {}
+    ac: dict[int, int] = {}
+    ap: dict[int, int] = {}
     for h, a, hg, ag in matches:
-        hs[h] = hs.get(h, 0) + hg; hc[h] = hc.get(h, 0) + ag; hp[h] = hp.get(h, 0) + 1
-        as_[a] = as_.get(a, 0) + ag; ac[a] = ac.get(a, 0) + hg; ap[a] = ap.get(a, 0) + 1
+        hs[h] = hs.get(h, 0) + hg
+        hc[h] = hc.get(h, 0) + ag
+        hp[h] = hp.get(h, 0) + 1
+        as_[a] = as_.get(a, 0) + ag
+        ac[a] = ac.get(a, 0) + hg
+        ap[a] = ap.get(a, 0) + 1
 
     s = Strengths(avg_home=avg_home, avg_away=avg_away)
     for t, games in hp.items():

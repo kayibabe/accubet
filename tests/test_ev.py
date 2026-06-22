@@ -1,6 +1,5 @@
 """Unit tests for the core EV math."""
 
-import math
 
 import pytest
 

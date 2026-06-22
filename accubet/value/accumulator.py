@@ -73,7 +73,7 @@ def build_tier(
 ) -> AccaTicket | None:
     legs = [_opp_to_leg(o) for o in opps if pool(o)]
     # keep the strongest candidates by the tier's objective
-    key = (lambda l: l.prob) if objective == "prob" else (lambda l: l.prob * l.odds - 1)
+    key = (lambda leg: leg.prob) if objective == "prob" else (lambda leg: leg.prob * leg.odds - 1)
     legs = sorted(legs, key=key, reverse=True)[:_POOL_CAP]
 
     hi = min(tier_cfg.max_legs, max_legs) if max_legs else tier_cfg.max_legs
@@ -82,12 +82,12 @@ def build_tier(
 
     for n in range(tier_cfg.min_legs, hi + 1):
         for combo in combinations(legs, n):
-            if len({l.match_id for l in combo}) < n:
+            if len({leg.match_id for leg in combo}) < n:
                 continue  # never two legs from the same match
-            combined_odds = math.prod(l.odds for l in combo)
+            combined_odds = math.prod(leg.odds for leg in combo)
             if not (tier_cfg.min_combined_odds <= combined_odds <= tier_cfg.max_combined_odds):
                 continue
-            combined_prob = math.prod(l.prob for l in combo)
+            combined_prob = math.prod(leg.prob for leg in combo)
             ev = combined_prob * combined_odds - 1.0
             score = combined_prob if objective == "prob" else ev
             if score > best_score:
@@ -95,8 +95,8 @@ def build_tier(
 
     if best is None:
         return None
-    combined_odds = math.prod(l.odds for l in best)
-    combined_prob = math.prod(l.prob for l in best)
+    combined_odds = math.prod(leg.odds for leg in best)
+    combined_prob = math.prod(leg.prob for leg in best)
     return AccaTicket(
         tier=tier_name,
         mode=mode,

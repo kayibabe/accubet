@@ -18,7 +18,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from accubet.config import AppConfig
-from accubet.market.efficiency import inefficiency_score, market_confidence
+from accubet.market.efficiency import market_confidence
 from accubet.storage.models import Consensus, Match, OddsSnapshot, Prediction, ValueBet
 from accubet.value.ev import expected_value, implied_probability, value_pct
 

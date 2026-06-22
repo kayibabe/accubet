@@ -91,7 +91,7 @@ def log_singles(session: Session, cfg: AppConfig, opps: list) -> int:
 
 
 def _signature(legs) -> str:
-    return "|".join(sorted(f"{l.match_id}:{l.market}:{l.selection}:{l.line}" for l in legs))
+    return "|".join(sorted(f"{leg.match_id}:{leg.market}:{leg.selection}:{leg.line}" for leg in legs))
 
 
 def _acca_exists(session: Session, tier: str, signature: str) -> bool:
