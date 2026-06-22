@@ -14,7 +14,8 @@ from sqlalchemy.orm import Session
 
 from accubet.config import AppConfig
 from accubet.logging_setup import get_logger
-from accubet.storage.models import Accumulator, AccumulatorLeg, Result, TrackedBet
+from accubet.market.clv import clv as _clv
+from accubet.storage.models import Accumulator, AccumulatorLeg, Match, OddsSnapshot, Result, TrackedBet
 from accubet.value.accumulator import AccaTicket
 
 log = get_logger(__name__)
@@ -129,15 +130,63 @@ def log_accumulators(session: Session, cfg: AppConfig, tickets: dict[str, AccaTi
     return stored
 
 
+# --- closing-line value helpers --------------------------------------------
+
+def _closing_price(
+    session: Session,
+    match_id: int,
+    market: str,
+    selection: str,
+    line: float | None,
+    kickoff,
+) -> float | None:
+    """Last world-book price snapshot at or before kickoff (closing-line proxy).
+
+    Falls back to the most recent snapshot if none exist before kickoff (e.g. the
+    free-tier API only refreshed odds once, after the match started).
+    """
+    base = (
+        select(OddsSnapshot.price)
+        .where(
+            OddsSnapshot.match_id == match_id,
+            OddsSnapshot.source == "apifootball",
+            OddsSnapshot.market == market,
+            OddsSnapshot.selection == selection,
+            OddsSnapshot.line == line,
+        )
+        .order_by(OddsSnapshot.captured_at.desc())
+        .limit(1)
+    )
+    if kickoff is not None:
+        price = session.execute(
+            base.where(OddsSnapshot.captured_at <= kickoff)
+        ).scalar_one_or_none()
+        if price is not None:
+            return price
+    return session.execute(base).scalar_one_or_none()
+
+
 # --- settlement ------------------------------------------------------------
 
 def settle(session: Session, cfg: AppConfig) -> dict[str, int]:
-    """Grade all unsettled tracked bets that now have results."""
+    """Grade all unsettled tracked bets that now have results, and populate CLV."""
     results = {r.match_id: r for r in session.execute(select(Result)).scalars()}
-    settled = 0
-    for tb in session.execute(
+    pending = list(session.execute(
         select(TrackedBet).where(TrackedBet.settled == False)  # noqa: E712
-    ).scalars():
+    ).scalars())
+
+    # pre-load kickoff times so we can look up the pre-kickoff closing price
+    single_match_ids = {tb.match_id for tb in pending if tb.kind == "single" and tb.match_id}
+    matches: dict[int, Match] = {}
+    if single_match_ids:
+        matches = {
+            m.id: m for m in session.execute(
+                select(Match).where(Match.id.in_(single_match_ids))
+            ).scalars()
+        }
+
+    settled = 0
+    for tb in pending:
         if tb.kind == "single":
             r = results.get(tb.match_id)
             if r is None:
@@ -148,6 +197,15 @@ def settle(session: Session, cfg: AppConfig) -> dict[str, int]:
             tb.result = outcome
             tb.pnl = pnl_for(outcome, tb.stake, tb.odds)
             tb.settled = True
+            # closing line value — requires at least one world-book snapshot
+            m = matches.get(tb.match_id)
+            closing = _closing_price(
+                session, tb.match_id, tb.market, tb.selection, tb.line,
+                m.kickoff if m else None,
+            )
+            if closing is not None and closing > 1.0:
+                tb.closing_odds = closing
+                tb.clv = _clv(tb.odds, closing)
             settled += 1
         elif tb.kind == "accumulator":
             acc = session.get(Accumulator, tb.ref_id)

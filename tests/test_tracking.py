@@ -3,11 +3,11 @@
 from types import SimpleNamespace
 
 import pytest
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, select
 from sqlalchemy.orm import Session
 
 from accubet.config import get_config
-from accubet.storage.models import Base, Match, Result, Team, TrackedBet
+from accubet.storage.models import Base, Match, OddsSnapshot, Result, Team, TrackedBet
 from accubet.tracking.performance import report
 from accubet.tracking.tracked_bets import log_singles, settle, settle_selection
 from accubet.value.accumulator import build_accumulators
@@ -98,6 +98,61 @@ def test_settle_and_report(session):
     # win pnl = 10*(2.5-1)=15 ; loss = -10 ; net +5 ; roi = 5/20 = 0.25
     assert o.pnl == pytest.approx(5.0)
     assert o.roi == pytest.approx(0.25)
+
+
+def test_settle_populates_clv(session):
+    from datetime import datetime
+    home, away = Team(api_team_id=20, name="C"), Team(api_team_id=21, name="D")
+    session.add_all([home, away])
+    session.flush()
+    kickoff = datetime(2025, 4, 10, 15, 0)
+    m = Match(api_fixture_id=9002, home_team_id=home.id, away_team_id=away.id,
+              status="FT", kickoff=kickoff)
+    session.add(m)
+    session.flush()
+    session.add(Result(match_id=m.id, home_goals=2, away_goals=0))
+    # closing world-book price for home win, captured 15 min before kickoff
+    session.add(OddsSnapshot(
+        match_id=m.id, source="apifootball", bookmaker="bet365",
+        market="match_winner", selection="home", price=1.90,
+        captured_at=datetime(2025, 4, 10, 14, 45),
+    ))
+    # we tracked a bet at 2.10 (better than the 1.90 close → positive CLV)
+    session.add(TrackedBet(
+        kind="single", match_id=m.id, market="match_winner", selection="home",
+        odds=2.10, stake=10.0, settled=False, result="pending",
+    ))
+    session.flush()
+
+    out = settle(session, get_config())
+    assert out["settled"] == 1
+
+    tb = session.execute(select(TrackedBet)).scalar_one()
+    assert tb.closing_odds == pytest.approx(1.90)
+    # p_close=1/1.9≈0.5263, p_taken=1/2.1≈0.4762  →  CLV=(0.5263-0.4762)/0.4762 > 0
+    assert tb.clv is not None and tb.clv > 0
+
+
+def test_settle_no_snapshot_leaves_clv_null(session):
+    from datetime import datetime
+    home, away = Team(api_team_id=30, name="E"), Team(api_team_id=31, name="F")
+    session.add_all([home, away])
+    session.flush()
+    m = Match(api_fixture_id=9003, home_team_id=home.id, away_team_id=away.id, status="FT")
+    session.add(m)
+    session.flush()
+    session.add(Result(match_id=m.id, home_goals=1, away_goals=0))
+    session.add(TrackedBet(
+        kind="single", match_id=m.id, market="match_winner", selection="home",
+        odds=2.00, stake=10.0, settled=False, result="pending",
+    ))
+    session.flush()
+
+    settle(session, get_config())
+
+    tb = session.execute(select(TrackedBet)).scalar_one()
+    assert tb.settled is True
+    assert tb.clv is None   # no snapshot → CLV stays null, not an error
 
 
 def test_log_singles_dedupes(session):
