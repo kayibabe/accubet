@@ -253,6 +253,35 @@ def bets(
         return JSONResponse({"bets": items, "count": len(items)})
 
 
+@app.get("/api/system")
+def system_info() -> JSONResponse:
+    """Returns API quota usage and the tail of the pipeline cron log."""
+    cfg = get_config()
+    from accubet.ingestion.quota import remaining, requests_used_today
+    with session_scope() as session:
+        used = requests_used_today(session)
+        rem  = remaining(session, cfg)
+
+    cron_log_path = Path("/data/cron.log")
+    cron_tail = ""
+    if cron_log_path.exists():
+        try:
+            with open(cron_log_path, "r", errors="replace") as f:
+                lines = f.readlines()
+                cron_tail = "".join(lines[-40:])
+        except Exception:
+            cron_tail = "(could not read log)"
+
+    return JSONResponse({
+        "quota": {
+            "used":      used,
+            "limit":     cfg.apifootball.daily_request_limit,
+            "remaining": rem,
+        },
+        "cron_log": cron_tail,
+    })
+
+
 @app.get("/api/performance")
 def performance() -> JSONResponse:
     """Return overall + per-market performance from settled paper bets."""

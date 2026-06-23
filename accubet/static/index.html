@@ -109,58 +109,86 @@ svg{display:inline-block;vertical-align:middle;flex-shrink:0;}
 .sidebar-overlay.open{display:block;}
 
 .sidebar{
-  width:192px;flex-shrink:0;
-  position:sticky;top:56px;
-  height:calc(100vh - 56px);
+  width:220px;flex-shrink:0;
+  position:fixed;top:0;left:0;height:100vh;
   overflow-y:auto;
   background:var(--bg);
   border-right:1px solid var(--border);
   display:flex;flex-direction:column;
   transition:transform .25s;
+  z-index:52;
 }
 @media(max-width:1023px){
-  .sidebar{
-    position:fixed;top:0;left:0;height:100vh;
-    z-index:48;transform:translateX(-100%);
-  }
+  .sidebar{transform:translateX(-100%);}
   .sidebar.open{transform:translateX(0);}
 }
+@media(min-width:1024px){
+  .topbar{margin-left:220px;}
+  .topbar .brand{display:none;}
+  .topbar .menu-btn{display:none;}
+  .topbar-center{display:none;}
+  .layout{padding-left:220px;}
+}
 
-.sidebar-nav{flex:1;padding:12px 8px;display:flex;flex-direction:column;gap:2px;}
+/* ────────────────────────────────────────────
+   SIDEBAR BRAND HEADER
+──────────────────────────────────────────── */
+.sidebar-brand{
+  display:flex;align-items:center;gap:10px;
+  padding:20px 16px 16px;border-bottom:1px solid var(--border);
+  flex-shrink:0;
+}
+.sidebar-brand-icon{
+  width:36px;height:36px;border-radius:10px;background:var(--accent);
+  display:flex;align-items:center;justify-content:center;
+  font-size:19px;flex-shrink:0;
+}
+.sidebar-brand-name{font-size:15px;font-weight:700;color:var(--text-h);letter-spacing:-.2px;display:block;line-height:1.2;}
+.sidebar-brand-sub{font-size:9px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:.15em;display:block;opacity:.7;margin-top:1px;}
+
+.sidebar-nav{flex:1;padding:10px 10px;display:flex;flex-direction:column;gap:1px;}
 .sidebar-section-label{
   font-size:10px;font-weight:600;color:var(--dim);text-transform:uppercase;
-  letter-spacing:.12em;padding:12px 12px 4px;opacity:.65;
+  letter-spacing:.12em;padding:14px 10px 4px;opacity:.55;
 }
 .nav-item{
   width:100%;display:flex;align-items:center;gap:10px;
-  padding:9px 12px;border-radius:9px;border:1px solid transparent;
+  padding:9px 12px;border-radius:9px;border:none;
   cursor:pointer;font-size:13px;font-weight:500;font-family:var(--sans);
   color:var(--text);background:none;text-align:left;
   transition:all .15s;
 }
 .nav-item:hover{background:var(--accent-bg);color:var(--text-h);}
 .nav-item.active{
-  background:var(--accent-bg);border-color:var(--accent-border);color:var(--accent);
+  background:var(--accent-bg);color:var(--accent);font-weight:600;
 }
-.nav-item svg{opacity:.8;}
+.nav-item svg{opacity:.65;}
+.nav-item:hover svg{opacity:.9;}
 .nav-item.active svg{opacity:1;}
 
 .sidebar-footer{
-  padding:10px 12px;border-top:1px solid var(--border);
+  padding:12px 10px;border-top:1px solid var(--border);flex-shrink:0;
 }
 .user-row{
   display:flex;align-items:center;gap:9px;
-  padding:7px 8px;border-radius:9px;cursor:pointer;
-  transition:background .15s;
+  padding:7px 8px;border-radius:9px;cursor:default;
 }
-.user-row:hover{background:var(--surface);}
 .user-avatar{
-  width:28px;height:28px;border-radius:50%;
-  background:var(--accent-bg);display:flex;align-items:center;
-  justify-content:center;flex-shrink:0;
+  width:32px;height:32px;border-radius:50%;
+  background:var(--accent-bg);border:1px solid var(--accent-border);
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  font-size:12px;font-weight:700;color:var(--accent);
 }
-.user-name{display:block;font-size:12px;font-weight:500;color:var(--text-h);line-height:1.2;}
-.user-tier{display:block;font-size:10px;font-weight:600;color:var(--accent);line-height:1.3;}
+.user-name{display:block;font-size:12px;font-weight:600;color:var(--text-h);line-height:1.2;}
+.user-tier{display:block;font-size:10px;font-weight:700;color:var(--amber);line-height:1.3;letter-spacing:.02em;}
+.sidebar-signout{
+  display:flex;align-items:center;gap:7px;
+  width:100%;padding:8px 8px;margin-top:4px;
+  border:none;background:none;cursor:pointer;border-radius:8px;
+  font-size:12px;color:var(--dim);font-family:var(--sans);text-align:left;
+  transition:all .15s;
+}
+.sidebar-signout:hover{color:var(--red);background:rgba(220,38,38,.06);}
 
 /* ────────────────────────────────────────────
    MAIN CONTENT
@@ -294,6 +322,29 @@ svg{display:inline-block;vertical-align:middle;flex-shrink:0;}
 /* dim finished match cards slightly */
 .signal-card.status-ft{opacity:.82;}
 .signal-card.status-ft:hover{opacity:1;}
+
+/* ────────────────────────────────────────────
+   TOOLS PAGE
+──────────────────────────────────────────── */
+.tools-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;margin-bottom:20px;}
+.tools-kpi{
+  background:var(--surface);border:1px solid var(--border);border-radius:12px;
+  padding:16px 18px;
+}
+.tools-kpi-label{font-size:11px;font-weight:600;color:var(--dim);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;}
+.tools-kpi-value{font-size:26px;font-weight:700;color:var(--text-h);font-variant-numeric:tabular-nums;line-height:1;}
+.tools-kpi-sub{font-size:11px;color:var(--dim);margin-top:4px;}
+.quota-bar-wrap{margin-top:10px;}
+.quota-bar{height:6px;background:var(--border);border-radius:3px;overflow:hidden;}
+.quota-bar-fill{height:100%;background:var(--accent);border-radius:3px;transition:width .4s;}
+.quota-bar-fill.quota-warn{background:var(--amber);}
+.quota-bar-fill.quota-danger{background:var(--red);}
+.cron-log{
+  background:var(--surface);border:1px solid var(--border);border-radius:12px;
+  padding:14px 16px;font-family:var(--mono);font-size:11px;line-height:1.6;
+  color:var(--dim);overflow-x:auto;white-space:pre-wrap;word-break:break-all;
+  max-height:400px;overflow-y:auto;
+}
 .secondary-btn{
   display:flex;align-items:center;gap:6px;
   padding:6px 12px;border-radius:9px;
@@ -715,6 +766,15 @@ code{
 
   <!-- SIDEBAR -->
   <aside class="sidebar" id="sidebar">
+    <!-- Brand -->
+    <div class="sidebar-brand">
+      <div class="sidebar-brand-icon">🎯</div>
+      <div>
+        <span class="sidebar-brand-name">AccuBet</span>
+        <span class="sidebar-brand-sub">Intelligence Platform</span>
+      </div>
+    </div>
+
     <nav class="sidebar-nav">
       <button class="nav-item active" id="nav-scan" onclick="switchTab('scan',this)">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
@@ -726,19 +786,32 @@ code{
       </button>
       <button class="nav-item" id="nav-perf" onclick="switchTab('perf',this)">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-        Performance
+        Analytics
+      </button>
+      <button class="nav-item" id="nav-tools" onclick="switchTab('tools',this)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+        Tools
+      </button>
+
+      <div class="sidebar-section-label">Admin</div>
+      <button class="nav-item" id="nav-settings" onclick="switchTab('settings',this)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        Settings
       </button>
     </nav>
+
     <div class="sidebar-footer">
       <div class="user-row">
-        <div class="user-avatar">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-        </div>
+        <div class="user-avatar">CM</div>
         <div>
-          <span class="user-name">AccuBet</span>
-          <span class="user-tier">Local Build</span>
+          <span class="user-name">Cromwell Mhango</span>
+          <span class="user-tier">Elite</span>
         </div>
       </div>
+      <button class="sidebar-signout" onclick="alert('Sign out not yet implemented.')">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        Sign out
+      </button>
     </div>
   </aside>
 
@@ -844,10 +917,10 @@ code{
       </div>
     </div>
 
-    <!-- ── PERFORMANCE TAB ── -->
+    <!-- ── ANALYTICS TAB ── -->
     <div id="tab-perf" class="tab">
       <div class="page-header">
-        <h1 class="page-title">Performance</h1>
+        <h1 class="page-title">Analytics</h1>
       </div>
       <div class="kpi-row" id="perf-kpis"></div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:4px">
@@ -858,6 +931,58 @@ code{
         <div>
           <div class="section-title">By kind</div>
           <div class="card" id="perf-kind"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── TOOLS TAB ── -->
+    <div id="tab-tools" class="tab">
+      <div class="page-header">
+        <h1 class="page-title">Tools</h1>
+        <div class="page-actions">
+          <button class="secondary-btn" onclick="loadTools()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+            Refresh
+          </button>
+        </div>
+      </div>
+
+      <div class="section-title">API Quota — Today</div>
+      <div id="tools-quota" class="tools-grid">
+        <div class="tools-kpi"><div class="tools-kpi-label">Loading…</div></div>
+      </div>
+
+      <div class="section-title">Pipeline Log</div>
+      <div id="tools-log"><div class="empty">Loading…</div></div>
+    </div>
+
+    <!-- ── SETTINGS TAB ── -->
+    <div id="tab-settings" class="tab">
+      <div class="page-header">
+        <h1 class="page-title">Settings</h1>
+      </div>
+      <div class="section-title">System</div>
+      <div class="card" style="padding:18px 20px;display:flex;flex-direction:column;gap:12px">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding-bottom:12px;border-bottom:1px solid var(--border)">
+          <div>
+            <div style="font-weight:600;color:var(--text-h);font-size:13px">Theme</div>
+            <div style="font-size:12px;color:var(--dim)">Toggle light / dark mode</div>
+          </div>
+          <button class="secondary-btn" onclick="toggleTheme()">Toggle theme</button>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding-bottom:12px;border-bottom:1px solid var(--border)">
+          <div>
+            <div style="font-weight:600;color:var(--text-h);font-size:13px">Daily Pipeline</div>
+            <div style="font-size:12px;color:var(--dim)">Runs automatically at 08:00 &amp; midnight CAT</div>
+          </div>
+          <span class="status-chip"><span id="status-dot2" style="width:7px;height:7px;border-radius:50%;background:var(--green);flex-shrink:0"></span>Active</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <div style="font-weight:600;color:var(--text-h);font-size:13px">Version</div>
+            <div style="font-size:12px;color:var(--dim)">AccuBet · Intelligence Platform</div>
+          </div>
+          <span style="font-size:12px;color:var(--dim);font-family:var(--mono)">v0.1.0</span>
         </div>
       </div>
     </div>
@@ -1035,6 +1160,45 @@ function switchTab(name, btn) {
   if (name === 'scan') { if (!_scanData.length) loadScan(); else renderScan(); }
   if (name === 'bets') loadBets();
   if (name === 'perf') loadPerf();
+  if (name === 'tools') loadTools();
+}
+
+/* ── TOOLS / SYSTEM ──────────────────────── */
+async function loadTools() {
+  document.getElementById('tools-quota').innerHTML = '<div class="tools-kpi"><div class="tools-kpi-label">Loading…</div></div>';
+  document.getElementById('tools-log').innerHTML = '<div class="empty">Loading…</div>';
+  try {
+    const r = await fetch(BASE + '/api/system');
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const d = await r.json();
+    const q = d.quota;
+    const pct = q.limit > 0 ? Math.round(q.used / q.limit * 100) : 0;
+    const barClass = pct >= 90 ? 'quota-danger' : pct >= 70 ? 'quota-warn' : '';
+    document.getElementById('tools-quota').innerHTML = `
+      <div class="tools-kpi">
+        <div class="tools-kpi-label">Used today</div>
+        <div class="tools-kpi-value">${q.used}</div>
+        <div class="tools-kpi-sub">of ${q.limit} daily limit</div>
+        <div class="quota-bar-wrap">
+          <div class="quota-bar"><div class="quota-bar-fill ${barClass}" style="width:${pct}%"></div></div>
+        </div>
+      </div>
+      <div class="tools-kpi">
+        <div class="tools-kpi-label">Remaining</div>
+        <div class="tools-kpi-value" style="color:${q.remaining < 10 ? 'var(--red)' : 'var(--green)'}">${q.remaining}</div>
+        <div class="tools-kpi-sub">calls available</div>
+      </div>
+      <div class="tools-kpi">
+        <div class="tools-kpi-label">Usage</div>
+        <div class="tools-kpi-value" style="font-size:20px">${pct}%</div>
+        <div class="tools-kpi-sub">of daily quota</div>
+      </div>`;
+    const log = d.cron_log || '(no log yet — first pipeline run at 08:00 CAT)';
+    document.getElementById('tools-log').innerHTML = `<div class="cron-log">${log.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>`;
+  } catch(e) {
+    document.getElementById('tools-quota').innerHTML = `<div class="empty">Failed to load: ${e.message}</div>`;
+    document.getElementById('tools-log').innerHTML = `<div class="empty">Error loading pipeline log.</div>`;
+  }
 }
 function switchSubTab(name, btn) {
   _subTab = name;
