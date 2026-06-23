@@ -280,6 +280,18 @@ def settle_bets() -> JSONResponse:
 
 
 
+@app.delete("/api/admin/bet/{bet_id}")
+def delete_bet(bet_id: int) -> JSONResponse:
+    """Delete a single tracked bet by ID."""
+    with session_scope() as session:
+        bet = session.get(TrackedBet, bet_id)
+        if not bet:
+            return JSONResponse({"error": "not found"}, status_code=404)
+        session.delete(bet)
+        session.flush()
+    return JSONResponse({"deleted": bet_id})
+
+
 @app.post("/api/pipeline/run")
 def pipeline_run() -> JSONResponse:
     """Trigger `accubet daily` synchronously and return its output."""
