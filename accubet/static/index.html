@@ -370,6 +370,31 @@ html[data-theme="dark"] .rank-2{color:#cbd5e1;}
   flex-shrink:0;width:42px;text-align:right;
 }
 
+/* Market rows (grouped inside one match card) */
+.market-rows{display:flex;flex-direction:column;gap:0;}
+.market-row{
+  display:flex;align-items:center;gap:8px;
+  padding:8px 0;border-top:1px solid var(--border);
+}
+.market-row:first-child{border-top:none;padding-top:2px;}
+.market-name{
+  font-size:13px;font-weight:500;color:var(--text-h);
+  flex-shrink:0;min-width:0;flex:1;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  max-width:160px;
+}
+.market-row-right{display:flex;align-items:center;gap:5px;margin-left:auto;flex-shrink:0;}
+.odds-pill-sm{
+  display:inline-flex;align-items:center;justify-content:center;
+  background:var(--accent-bg);border:1px solid var(--accent-border);
+  color:var(--accent);font-size:12px;font-weight:700;
+  padding:2px 8px;border-radius:5px;font-variant-numeric:tabular-nums;
+}
+.ev-text{font-size:11px;font-weight:700;font-variant-numeric:tabular-nums;min-width:38px;text-align:right;}
+.ev-text.pos{color:var(--green);}
+.ev-text.neg{color:var(--red);}
+.ev-text.neu{color:var(--dim);}
+
 /* Details toggle */
 .details-toggle{
   display:flex;align-items:center;gap:4px;
@@ -938,13 +963,8 @@ function renderScan() {
     });
   }
 
-  // KPIs
+  // KPIs computed after match grouping (see below)
   const avgEv = opps.length ? opps.reduce((s,o)=>s+(o.ev||0),0)/opps.length : 0;
-  document.getElementById('scan-kpis').innerHTML =
-    kpi('Matches', new Set(opps.map(o=>o.match)).size) +
-    kpi('Signals', opps.length, 'acc') +
-    kpi('Passing gates', opps.filter(o=>o.passes).length, opps.some(o=>o.passes)?'pos':'') +
-    kpi('Avg EV', (avgEv*100).toFixed(1)+'%', avgEv>0?'pos':avgEv<0?'neg':'');
 
   // Summary bar
   const posEv = opps.filter(o=>o.ev>0).length;
@@ -958,90 +978,138 @@ function renderScan() {
     return;
   }
 
-  // Group by kickoff date
-  const groups = {};
-  [...opps].sort((a,b)=>new Date(a.kickoff)-new Date(b.kickoff)).forEach(o=>{
-    const k=dateKey(o.kickoff);
-    if(!groups[k])groups[k]=[];
-    groups[k].push(o);
+  // ── Group signals by match name ──────────────────────────────
+  const matchMap = {};
+  opps.forEach(o => {
+    if (!matchMap[o.match]) {
+      matchMap[o.match] = { match: o.match, kickoff: o.kickoff, signals: [] };
+    }
+    matchMap[o.match].signals.push(o);
   });
 
-  let html='';
-  Object.entries(groups).sort((a,b)=>a[0].localeCompare(b[0])).forEach(([dk,dayOpps])=>{
-    const label = fmtDateShort(dayOpps[0].kickoff);
-    const fullLabel = fmtDateFull(dayOpps[0].kickoff);
-    html+=`<div class="date-group">
+  // Sort markets inside each match card by fair_prob descending
+  // Derive match-level rank from the best EV signal in that match
+  let matchCards = Object.values(matchMap).map(m => {
+    m.signals.sort((a, b) => (b.fair_prob || 0) - (a.fair_prob || 0));
+    m.bestEv   = Math.max(...m.signals.map(s => s.ev   || 0));
+    m.anyPass  = m.signals.some(s => s.passes);
+    m.anySteam = m.signals.some(s => s.steam_move);
+    return m;
+  });
+
+  // Rank match cards by bestEv descending
+  matchCards.sort((a, b) => b.bestEv - a.bestEv);
+  matchCards.forEach((m, i) => m._matchRank = i + 1);
+
+  // Update KPIs (recalculate on match level)
+  const totalSignals = opps.length;
+  const nMatches = matchCards.length;
+  document.getElementById('scan-kpis').innerHTML =
+    kpi('Matches', nMatches) +
+    kpi('Signals', totalSignals, 'acc') +
+    kpi('Passing gates', opps.filter(o=>o.passes).length, opps.some(o=>o.passes)?'pos':'') +
+    kpi('Avg EV', (avgEv*100).toFixed(1)+'%', avgEv>0?'pos':avgEv<0?'neg':'');
+
+  // ── Group match cards by kickoff date ─────────────────────────
+  const dateGroups = {};
+  [...matchCards].sort((a,b)=>new Date(a.kickoff)-new Date(b.kickoff)).forEach(m=>{
+    const k = dateKey(m.kickoff);
+    if (!dateGroups[k]) dateGroups[k] = [];
+    dateGroups[k].push(m);
+  });
+
+  // ── Render ───────────────────────────────────────────────────
+  let html = '';
+  Object.entries(dateGroups).sort((a,b)=>a[0].localeCompare(b[0])).forEach(([,dayMatches])=>{
+    const label     = fmtDateShort(dayMatches[0].kickoff);
+    const fullLabel = fmtDateFull(dayMatches[0].kickoff);
+    const sigCount  = dayMatches.reduce((s,m)=>s+m.signals.length, 0);
+    html += `<div class="date-group">
       <div class="date-separator">
         <div class="date-sep-line"></div>
-        <span class="date-sep-label">${label==='Today'||label==='Tomorrow'?label:fullLabel} · ${dayOpps.length} match${dayOpps.length!==1?'es':''}</span>
+        <span class="date-sep-label">${label==='Today'||label==='Tomorrow'?label:fullLabel} · ${dayMatches.length} match${dayMatches.length!==1?'es':''} · ${sigCount} signal${sigCount!==1?'s':''}</span>
         <div class="date-sep-line"></div>
       </div>
       <div class="signal-cards">`;
 
-    dayOpps.forEach(o=>{
-      const line = o.line!=null ? ` ${o.line}` : '';
-      const cd   = countdown(o.kickoff);
-      const implied = o.price>0 ? pct(1/o.price) : '—';
-      const edge = (o.fair_prob>0 && o.price>0) ? ((o.fair_prob - 1/o.price)*100).toFixed(1)+'pp' : '—';
-      const pass  = o.passes    ? '<span class="badge badge-pass">✓ Gate</span>' : '';
-      const steam = o.steam_move? '<span class="badge badge-steam">⚡ Steam</span>' : '';
-      const cardId = `card-${o._rank}`;
+    dayMatches.forEach(m => {
+      const cd       = countdown(m.kickoff);
+      const cardId   = `card-m${m._matchRank}`;
+      const anyPass  = m.anyPass  ? '<span class="badge badge-pass">✓ Gate</span>' : '';
+      const anySteam = m.anySteam ? '<span class="badge badge-steam">⚡ Steam</span>' : '';
 
-      html+=`<div class="signal-card ${evCardClass(o.ev||0)}">
+      // Market rows — sorted by fair_prob desc (already sorted above)
+      const marketRows = m.signals.map(s => {
+        const line    = s.line != null ? ` ${s.line}` : '';
+        const evCls   = s.ev > 0 ? 'pos' : s.ev < 0 ? 'neg' : 'neu';
+        const evStr   = s.ev != null ? (s.ev >= 0 ? '+' : '') + (s.ev*100).toFixed(1) + '%' : '—';
+        const implied = s.price > 0 ? pct(1/s.price) : '—';
+        return `<div class="market-row">
+          <span class="market-name">${s.market} · ${s.selection}${line}</span>
+          ${confPill(s.confidence)}
+          <div class="prob-bar-wrap">
+            <div class="prob-bar">
+              <div class="prob-bar-fill ${probBarColor(s.fair_prob||0)}" style="width:${Math.min(100,(s.fair_prob||0)*100).toFixed(0)}%"></div>
+            </div>
+          </div>
+          <span class="prob-pct">${pct(s.fair_prob,0)}</span>
+          <div class="market-row-right">
+            <span class="odds-pill-sm">${s.price.toFixed(2)}</span>
+            ${srcTag(s.price_source)}
+            <span class="ev-text ${evCls}">${evStr}</span>
+          </div>
+        </div>`;
+      }).join('');
+
+      // Details panel: aggregated metrics for the match
+      const bestSig  = m.signals.reduce((best,s) => (s.ev||0) > (best.ev||0) ? s : best, m.signals[0]);
+      const detailId = `${cardId}-det`;
+
+      html += `<div class="signal-card ${evCardClass(m.bestEv)}">
         <div class="card-body">
           <div class="card-header">
-            <span class="card-match">${o.match}</span>
+            <span class="card-match">${m.match}</span>
             <div class="card-right">
               <span class="card-time">
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                ${fmtTime(o.kickoff)}${cd?` <span class="card-countdown">(${cd})</span>`:''}
+                ${fmtTime(m.kickoff)}${cd ? ` <span class="card-countdown">(${cd})</span>` : ''}
               </span>
-              ${rankBadge(o._rank)}
+              ${rankBadge(m._matchRank)}
             </div>
           </div>
 
-          <div class="prob-row">
-            <span class="prob-market">${o.market} · ${o.selection}${line}</span>
-            ${confPill(o.confidence)}
-            <div class="prob-bar-wrap">
-              <div class="prob-bar">
-                <div class="prob-bar-fill ${probBarColor(o.fair_prob||0)}" style="width:${Math.min(100,(o.fair_prob||0)*100).toFixed(0)}%"></div>
-              </div>
-            </div>
-            <span class="prob-pct">${pct(o.fair_prob,0)}</span>
-          </div>
+          <div class="market-rows">${marketRows}</div>
 
-          <button class="details-toggle" onclick="toggleDetails('${cardId}', this)">
+          <button class="details-toggle" onclick="toggleDetails('${detailId}',this)" style="margin-top:8px">
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
             Details
           </button>
-          <div class="details-panel" id="${cardId}">
+          <div class="details-panel" id="${detailId}">
             <div class="details-metrics">
               <div class="detail-metric">
-                <span class="dm-val ${o.ev>0?'pos':o.ev<0?'neg':''}">${o.ev!=null?(o.ev>=0?'+':'')+(o.ev*100).toFixed(1)+'%':'—'}</span>
-                <span class="dm-lbl">EV</span>
+                <span class="dm-val ${bestSig.ev>0?'pos':bestSig.ev<0?'neg':''}">${bestSig.ev!=null?(bestSig.ev>=0?'+':'')+(bestSig.ev*100).toFixed(1)+'%':'—'}</span>
+                <span class="dm-lbl">Best EV</span>
               </div>
               <div class="detail-metric">
-                <span class="dm-val">${pct(o.fair_prob)}</span>
-                <span class="dm-lbl">Model Prob</span>
+                <span class="dm-val">${pct(bestSig.fair_prob)}</span>
+                <span class="dm-lbl">Best Model Prob</span>
               </div>
               <div class="detail-metric">
-                <span class="dm-val" style="color:var(--dim)">${implied}</span>
-                <span class="dm-lbl">Implied</span>
+                <span class="dm-val" style="color:var(--dim)">${m.signals.length}</span>
+                <span class="dm-lbl">Markets</span>
               </div>
             </div>
-            <div class="details-badges" style="margin-top:10px">
-              ${pass}${steam}
-              <span style="font-size:11px;color:var(--dim)">${o.n_books} book${o.n_books!==1?'s':''}</span>
+            <div class="details-badges" style="margin-top:8px">
+              ${anyPass}${anySteam}
+              <span style="font-size:11px;color:var(--dim)">${bestSig.n_books} book${bestSig.n_books!==1?'s':''}</span>
             </div>
           </div>
         </div>
 
         <div class="card-footer">
           <div class="footer-left">
-            <span class="odds-pill">${o.price.toFixed(2)}</span>
-            ${srcTag(o.price_source)}
-            ${pass}${steam}
+            ${anyPass}${anySteam}
+            <span style="font-size:11px;color:var(--dim)">${m.signals.length} market${m.signals.length!==1?'s':''}</span>
           </div>
           <button class="source-btn">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
@@ -1051,7 +1119,7 @@ function renderScan() {
       </div>`;
     });
 
-    html+='</div></div>';
+    html += '</div></div>';
   });
 
   document.getElementById('scan-cards').innerHTML = html;
