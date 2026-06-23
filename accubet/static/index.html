@@ -1704,7 +1704,7 @@ function renderScan() {
         return `<div class="market-row${rowCls}">
           <span class="market-name">${fmtMarketRow(s.market, s.selection, s.line)}</span>
           ${isTopProb ? '<span class="pick-badge">Top Prob</span>' : ''}
-          ${isTopEv   ? '<span class="pick-badge pick-badge-ev">Track</span>' : ''}
+          ${isTopEv   ? '<span class="pick-badge pick-badge-ev">Best EV</span>' : ''}
           ${confPill(s.confidence)}
           <div class="prob-bar-wrap">
             <div class="prob-bar">
