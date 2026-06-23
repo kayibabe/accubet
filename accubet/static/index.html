@@ -952,7 +952,13 @@ code{
         <div class="tools-kpi"><div class="tools-kpi-label">Loading…</div></div>
       </div>
 
-      <div class="section-title">Pipeline Log</div>
+      <div class="section-title" style="display:flex;align-items:center;justify-content:space-between">
+        Pipeline Log
+        <button class="primary-btn" id="pipeline-run-btn" onclick="runPipeline()" style="font-size:12px;padding:5px 12px">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          Run Pipeline Now
+        </button>
+      </div>
       <div id="tools-log"><div class="empty">Loading…</div></div>
     </div>
 
@@ -1122,6 +1128,11 @@ function calPick(ds) { _navigateDate(ds); }
 
 /* ── MARKET / SELECTION LABELS ──────────── */
 function fmtMarket(market) {
+  if (!market) return '—';
+  if (market.startsWith('acca:')) {
+    const tier = market.split(':')[1];
+    return 'Accumulator · ' + (tier ? tier.charAt(0).toUpperCase() + tier.slice(1) : tier);
+  }
   const MAP = {
     match_winner:  'Match Winner',
     over_under:    'Goals',
@@ -1343,7 +1354,7 @@ function perfTable(rows) {
     const wr=r.win_rate||0;
     const bc=wr>=0.6?'#22c55e':wr>=0.45?'#f59e0b':'#f87171';
     return `<tr>
-      <td>${r.label}</td>
+      <td>${fmtMarket(r.label)}</td>
       <td style="color:var(--dim)">${r.settled}</td>
       <td><div class="win-bar-wrap">
         <div class="win-bar"><div class="win-bar-fill" style="width:${(wr*100).toFixed(0)}%;background:${bc}"></div></div>
@@ -1354,6 +1365,29 @@ function perfTable(rows) {
       <td class="${pnlClass(r.roi)}">${pct(r.roi)}</td>
     </tr>`;
   }).join('')+'</tbody></table>';
+}
+
+async function runPipeline() {
+  const btn = document.getElementById('pipeline-run-btn');
+  btn.disabled = true;
+  btn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> Running…`;
+  document.getElementById('tools-log').innerHTML = '<div class="empty">Pipeline started — this takes ~30 seconds…</div>';
+  try {
+    const r = await fetch(BASE + '/api/pipeline/run', { method: 'POST' });
+    const d = await r.json();
+    if (r.ok) {
+      document.getElementById('tools-log').innerHTML = `<div class="cron-log">${(d.output||'Done.').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>`;
+    } else {
+      document.getElementById('tools-log').innerHTML = `<div class="empty" style="color:var(--red)">Error: ${d.detail || r.status}</div>`;
+    }
+  } catch(e) {
+    document.getElementById('tools-log').innerHTML = `<div class="empty" style="color:var(--red)">Failed: ${e.message}</div>`;
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg> Run Pipeline Now`;
+    // Refresh quota after run
+    loadTools();
+  }
 }
 
 /* ── HEALTH CHECK ────────────────────────── */

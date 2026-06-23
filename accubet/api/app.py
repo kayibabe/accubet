@@ -11,6 +11,8 @@ Exposes JSON endpoints consumed by the dashboard SPA:
 
 from __future__ import annotations
 
+import subprocess
+import sys
 from datetime import date as date_type, datetime
 from pathlib import Path
 
@@ -251,6 +253,23 @@ def bets(
                 "predicted_prob": b.predicted_prob,
             })
         return JSONResponse({"bets": items, "count": len(items)})
+
+
+@app.post("/api/pipeline/run")
+def pipeline_run() -> JSONResponse:
+    """Trigger `accubet daily` synchronously and return its output."""
+    try:
+        result = subprocess.run(
+            [sys.executable, "-m", "accubet.cli", "daily", "--days", "2", "--back", "1"],
+            capture_output=True, text=True, timeout=120,
+        )
+        output = result.stdout + (("\n" + result.stderr) if result.stderr else "")
+        return JSONResponse({"output": output, "exit_code": result.returncode})
+    except subprocess.TimeoutExpired:
+        return JSONResponse({"output": "Pipeline timed out after 120s.", "exit_code": -1})
+    except Exception as exc:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=500, detail=str(exc))
 
 
 @app.get("/api/system")
