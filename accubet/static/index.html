@@ -473,6 +473,8 @@ svg{display:inline-block;vertical-align:middle;flex-shrink:0;}
 .card-header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:10px;}
 .card-match{font-size:16px;font-weight:600;color:var(--text-h);line-height:1.3;cursor:default;}
 .card-comp{display:block;font-size:10px;font-weight:500;color:var(--dim);text-transform:uppercase;letter-spacing:.07em;margin-top:2px;opacity:.8;}
+.market-row-pick{background:color-mix(in srgb,var(--accent) 6%,transparent);border-radius:6px;}
+.pick-badge{font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);background:color-mix(in srgb,var(--accent) 15%,transparent);border:1px solid color-mix(in srgb,var(--accent) 30%,transparent);padding:1px 5px;border-radius:4px;flex-shrink:0;}
 .card-right{display:flex;align-items:center;gap:6px;flex-shrink:0;padding-top:2px;}
 .card-time{
   display:flex;align-items:center;gap:4px;
@@ -1614,7 +1616,7 @@ function renderScan() {
   // Sort markets inside each match card by fair_prob descending
   // Derive match-level rank from the best EV signal in that match
   let matchCards = Object.values(matchMap).map(m => {
-    m.signals.sort((a, b) => (b.ev || 0) - (a.ev || 0));
+    m.signals.sort((a, b) => (b.fair_prob || 0) - (a.fair_prob || 0));
     m.bestEv   = Math.max(...m.signals.map(s => s.ev   || 0));
     m.anyPass  = m.signals.some(s => s.passes);
     m.anySteam = m.signals.some(s => s.steam_move);
@@ -1677,7 +1679,8 @@ function renderScan() {
       }
 
       // Market rows — sorted by fair_prob desc (already sorted above)
-      const marketRows = m.signals.map(s => {
+      const marketRows = m.signals.map((s, si) => {
+        const isTopPick = si === 0;
         const line    = s.line != null ? ` ${s.line}` : '';
         const evCls   = s.ev > 0 ? 'pos' : s.ev < 0 ? 'neg' : 'neu';
         const evStr   = s.ev != null ? (s.ev >= 0 ? '+' : '') + (s.ev*100).toFixed(1) + '%' : '—';
@@ -1691,8 +1694,9 @@ function renderScan() {
           else if (oc === 'void') outcomeBadge = '<span class="outcome-void">–</span>';
         }
 
-        return `<div class="market-row">
+        return `<div class="market-row${isTopPick ? ' market-row-pick' : ''}">
           <span class="market-name">${fmtMarketRow(s.market, s.selection, s.line)}</span>
+          ${isTopPick ? '<span class="pick-badge">Pick</span>' : ''}
           ${confPill(s.confidence)}
           <div class="prob-bar-wrap">
             <div class="prob-bar">

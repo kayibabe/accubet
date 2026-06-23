@@ -65,9 +65,17 @@ def pnl_for(result: str, stake: float, odds: float) -> float:
 # --- logging ---------------------------------------------------------------
 
 def log_singles(session: Session, cfg: AppConfig, opps: list) -> int:
-    """Log every signal as a flat-stake paper bet (deduped by match/market/selection/line)."""
+    """Log the highest-probability gate-passing signal per match as a flat-stake paper bet."""
+    # From gate-passing signals, keep only the best (highest fair_prob) per match
+    best: dict[int, object] = {}
+    for o in opps:
+        if not o._passes:
+            continue
+        if o.match_id not in best or o.fair_prob > best[o.match_id].fair_prob:
+            best[o.match_id] = o
+
     stored = 0
-    for o in sorted(opps, key=lambda o: o.ev, reverse=True):
+    for o in sorted(best.values(), key=lambda o: o.fair_prob, reverse=True):
         dup = session.execute(
             select(TrackedBet.id).where(
                 TrackedBet.kind == "single",
