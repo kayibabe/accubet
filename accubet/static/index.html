@@ -716,6 +716,66 @@ tbody tr:hover td{background:var(--surface);}
 .refresh-btn:hover{background:var(--accent-bg);}
 
 /* ────────────────────────────────────────────
+   TRACKER REDESIGN
+──────────────────────────────────────────── */
+.tracker-banner{
+  background:var(--accent-bg);border:1px solid var(--accent-border);
+  border-radius:12px;padding:16px 20px;margin-bottom:14px;
+  display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;
+}
+.tracker-banner-stats{display:flex;gap:28px;flex-wrap:wrap;align-items:center;}
+.tbs-item{text-align:center;}
+.tbs-item .tbs-val{font-size:22px;font-weight:700;color:var(--text-h);line-height:1;font-variant-numeric:tabular-nums;}
+.tbs-item .tbs-val.pos{color:var(--green);} .tbs-item .tbs-val.neg{color:var(--red);}
+.tbs-item .tbs-lbl{font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:.06em;margin-top:3px;}
+.tracker-banner-right{font-size:11px;color:var(--dim);text-align:right;white-space:nowrap;}
+.tracker-banner-right strong{color:var(--accent);font-size:20px;font-weight:700;display:block;font-variant-numeric:tabular-nums;}
+.tracker-filters{
+  display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px;
+  padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:10px;
+}
+.tracker-filters label{font-size:11px;color:var(--dim);display:flex;align-items:center;gap:5px;white-space:nowrap;}
+.tracker-filters input[type=date]{
+  background:var(--bg2);border:1px solid var(--border);color:var(--text);
+  padding:4px 8px;border-radius:7px;font-size:12px;font-family:var(--sans);outline:none;cursor:pointer;color-scheme:dark;
+}
+.tracker-filters select{
+  background:var(--bg2);border:1px solid var(--border);color:var(--text);
+  padding:4px 10px;border-radius:7px;font-size:12px;font-family:var(--sans);outline:none;cursor:pointer;
+}
+.tf-sep{flex:1;}
+.kind-toggle{display:flex;border:1px solid var(--border);border-radius:8px;overflow:hidden;flex-shrink:0;}
+.kind-toggle button{
+  background:none;border:none;border-right:1px solid var(--border);color:var(--dim);
+  padding:4px 12px;font-size:11px;cursor:pointer;font-family:var(--sans);transition:all .15s;
+}
+.kind-toggle button:last-child{border-right:none;}
+.kind-toggle button:hover{color:var(--text-h);}
+.kind-toggle button.active{background:var(--accent);color:#fff;}
+.tracker-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px;}
+.tsum{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 14px;}
+.tsum .ts-val{font-size:22px;font-weight:700;color:var(--text-h);line-height:1.1;font-variant-numeric:tabular-nums;}
+.tsum .ts-val.pos{color:var(--green);} .tsum .ts-val.neg{color:var(--red);}
+.tsum .ts-lbl{font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:.06em;margin-top:4px;}
+.tsum .ts-sub{font-size:11px;color:var(--accent);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.pnl-chart-wrap{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:12px;padding:16px;margin-bottom:14px;
+}
+.pnl-chart-hdr{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px;}
+.pnl-chart-title{font-size:12px;font-weight:600;color:var(--text-h);}
+.pnl-chart-total{font-size:20px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1;}
+.pnl-chart-legend{display:flex;gap:10px;align-items:center;}
+.pnl-chart-legend span{font-size:11px;color:var(--dim);display:flex;align-items:center;gap:4px;}
+.pnl-chart-legend i{display:inline-block;width:8px;height:8px;border-radius:50%;}
+.ledger-wrap{margin-bottom:14px;}
+.ledger-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.ledger-sub{font-size:11px;color:var(--dim);margin-top:2px;}
+.ledger-kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;}
+@media(max-width:960px){.ledger-kpis{grid-template-columns:repeat(3,1fr);}.tracker-summary{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:600px){.ledger-kpis{grid-template-columns:repeat(2,1fr);}.tracker-summary{grid-template-columns:1fr 1fr;}}
+
+/* ────────────────────────────────────────────
    MISC
 ──────────────────────────────────────────── */
 .section-title{font-size:11px;font-weight:600;color:var(--dim);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;}
@@ -899,19 +959,82 @@ code{
     <!-- ── TRACKER TAB ── -->
     <div id="tab-bets" class="tab">
       <div class="page-header">
-        <h1 class="page-title">Tracker</h1>
+        <h1 class="page-title">Bet Tracker</h1>
+        <div class="page-actions">
+          <button class="secondary-btn" id="settle-btn" onclick="runSettle()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            Settle
+          </button>
+          <button class="secondary-btn" id="sync-btn" onclick="runPipelineFromTracker()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+            Sync
+          </button>
+          <button class="secondary-btn" onclick="loadBets()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+            Refresh
+          </button>
+        </div>
       </div>
-      <div class="controls">
-        <label><input type="checkbox" id="settled-only" onchange="loadBets()"> Settled only</label>
-        <select id="market-filter" onchange="loadBets()">
-          <option value="">All markets</option>
-          <option value="match_winner">Match winner</option>
-          <option value="over_under">Over/Under</option>
-          <option value="btts">BTTS</option>
+
+      <!-- All-time performance banner -->
+      <div class="tracker-banner" id="tracker-banner">
+        <div class="empty" style="padding:12px"><span class="spinner"></span></div>
+      </div>
+
+      <!-- Filters -->
+      <div class="tracker-filters">
+        <label>From <input type="date" id="tf-from" onchange="applyTrackerFilters()"></label>
+        <label>To <input type="date" id="tf-to" onchange="applyTrackerFilters()"></label>
+        <select id="tf-status" onchange="applyTrackerFilters()">
+          <option value="">All Status</option>
+          <option value="win">Won</option>
+          <option value="loss">Lost</option>
+          <option value="void">Void</option>
+          <option value="pending">Pending</option>
         </select>
-        <button class="refresh-btn" onclick="loadBets()">↻ Refresh</button>
+        <div class="tf-sep"></div>
+        <div class="kind-toggle" id="kind-toggle">
+          <button class="active" onclick="setTrackerKind('all',this)">All Picks</button>
+          <button onclick="setTrackerKind('single',this)">System Picks</button>
+          <button onclick="setTrackerKind('accumulator',this)">Accumulators</button>
+        </div>
       </div>
-      <div class="section-title">Paper bet history</div>
+
+      <!-- Filtered summary stats -->
+      <div class="tracker-summary" id="tracker-summary"></div>
+
+      <!-- Cumulative P&L chart -->
+      <div class="pnl-chart-wrap">
+        <div class="pnl-chart-hdr">
+          <div>
+            <div class="pnl-chart-title">Cumulative P&amp;L</div>
+            <div class="pnl-chart-total" id="pnl-chart-total">—</div>
+          </div>
+          <div class="pnl-chart-legend">
+            <span><i style="background:var(--green)"></i>Won</span>
+            <span><i style="background:var(--red)"></i>Lost</span>
+          </div>
+        </div>
+        <div id="pnl-chart"><div class="empty" style="padding:24px">Loading…</div></div>
+      </div>
+
+      <!-- Ledger summary -->
+      <div class="ledger-wrap">
+        <div class="ledger-hdr">
+          <div>
+            <div class="section-title" style="margin:0">Ledger Summary</div>
+            <div class="ledger-sub">KPIs from recorded stake and settled P/L</div>
+          </div>
+          <button class="secondary-btn" onclick="exportTrackerCSV()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Export CSV
+          </button>
+        </div>
+        <div class="ledger-kpis" id="ledger-kpis"></div>
+      </div>
+
+      <!-- Bet history table -->
+      <div class="section-title">Bet History</div>
       <div class="card" id="bets-container">
         <div class="empty">Select the Tracker tab to load.</div>
       </div>
@@ -1660,85 +1783,318 @@ function toggleDetails(id, btn) {
     : `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg> Details`;
 }
 
+/* ── TRACKER STATE ────────────────────────── */
+let _betsAll = [];
+let _betsKind = 'all';
+
 /* ── LOAD BETS ────────────────────────────── */
 async function loadBets() {
-  const settledOnly = document.getElementById('settled-only').checked;
-  const market = document.getElementById('market-filter').value;
-  let url = `${BASE}/api/bets?limit=200&settled_only=${settledOnly}`;
-  if (market) url += `&market=${market}`;
-  const container = document.getElementById('bets-container');
-  container.innerHTML = '<div class="empty"><span class="spinner"></span>Loading…</div>';
+  document.getElementById('tracker-banner').innerHTML = '<div class="empty" style="padding:12px"><span class="spinner"></span></div>';
+  document.getElementById('bets-container').innerHTML = '<div class="empty"><span class="spinner"></span>Loading…</div>';
   try {
-    const r = await fetch(url);
-    const data = await r.json();
-    const bets = data.bets || [];
-    if (!bets.length) {
-      container.innerHTML = '<div class="empty">No bets. Run <code>accubet track</code>.</div>';
-      return;
-    }
-    const groups = {};
-    bets.forEach((b,i)=>{ const k=dateKey(b.placed_at); if(!groups[k])groups[k]=[]; groups[k].push({...b,_idx:i+1}); });
-    const COLS = 10;
-    let html=`<table><thead><tr>
-      <th>#</th><th>Match</th><th>Market</th><th>Selection</th>
-      <th>Odds</th><th>EV%</th><th>Stake</th><th>Result</th><th>P&amp;L</th><th>CLV%</th>
-    </tr></thead><tbody>`;
-    Object.entries(groups).sort((a,b)=>b[0].localeCompare(a[0])).forEach(([,dayBets])=>{
-      const dayPnl=dayBets.reduce((s,b)=>s+(b.pnl||0),0);
-      const pnlStr=dayPnl>=0?`+${dayPnl.toFixed(2)}`:dayPnl.toFixed(2);
-      const pnlColor=dayPnl>0?'var(--green)':dayPnl<0?'var(--red)':'var(--dim)';
-      html+=`<tr class="group-row"><td colspan="${COLS}"><div class="group-header">
-        <span class="group-date">${fmtDateFull(dayBets[0].placed_at)}</span>
-        <div class="group-meta">
-          <span>${dayBets.length} bet${dayBets.length!==1?'s':''}</span>
-          <span style="color:${pnlColor};font-weight:600">${pnlStr}</span>
-        </div>
-      </div></td></tr>`;
-      // Group within a day by match_id so bets for the same game are consecutive
-      const matchOrder = [], matchGroups = {};
-      dayBets.forEach(b=>{
-        const mk = b.match_id != null ? String(b.match_id) : '__acca__';
-        if (!matchGroups[mk]) { matchOrder.push(mk); matchGroups[mk] = []; }
-        matchGroups[mk].push(b);
-      });
-      matchOrder.forEach(mk=>{
-        const mBets = matchGroups[mk];
-        const first = mBets[0];
-        const matchLabel = first.home && first.away ? `${first.home} v ${first.away}` : (mk==='__acca__'?'Accumulator':null);
-        const kickoffStr = first.kickoff ? fmtTime(first.kickoff) : '';
-        if (matchLabel) {
-          html+=`<tr class="match-subrow"><td colspan="${COLS}" style="padding:4px 12px 2px;background:var(--bg2);border-bottom:1px solid var(--border)">
-            <span style="font-size:12px;font-weight:600;color:var(--text-h)">${matchLabel}</span>
-            ${kickoffStr?`<span style="font-size:11px;color:var(--dim);margin-left:8px">${kickoffStr}</span>`:''}
-          </td></tr>`;
-        }
-        mBets.forEach(b=>{
-          const res = b.result==='win'  ? '<span class="badge badge-win">Won</span>'
-                    : b.result==='loss' ? '<span class="badge badge-loss">Lost</span>'
-                    : b.result==='void' ? '<span class="badge badge-void">Void</span>'
-                    : '<span class="badge badge-pend">Pending</span>';
-          const clv = b.clv!=null ? `<span class="${pnlClass(b.clv)}">${(b.clv*100).toFixed(1)}%</span>` : '—';
-          const matchCell = matchLabel
-            ? `<td style="color:var(--dim);font-size:11px">—</td>`
-            : `<td style="color:var(--dim);font-size:11px">${b.home&&b.away?b.home+' v '+b.away:'—'}</td>`;
-          html+=`<tr>
-            <td style="color:var(--dim);font-size:11px">${b._idx}</td>
-            ${matchCell}
-            <td style="color:var(--dim)">${fmtMarket(b.market)}</td>
-            <td style="font-weight:500;color:var(--text-h)">${fmtSelection(b.market, b.selection, b.line)}</td>
-            <td style="font-weight:600;font-variant-numeric:tabular-nums">${b.odds.toFixed(2)}</td>
-            <td class="${b.ev>0?'pnl-pos':b.ev<0?'pnl-neg':''}">${b.ev!=null?(b.ev*100).toFixed(1)+'%':'—'}</td>
-            <td style="font-variant-numeric:tabular-nums;color:var(--dim)">${b.stake.toFixed(0)}</td>
-            <td>${res}</td>
-            <td class="${pnlClass(b.pnl)}">${b.pnl!=null?(b.pnl>=0?'+':'')+b.pnl.toFixed(2):'—'}</td>
-            <td>${clv}</td>
-          </tr>`;
-        });
+    const [perfR, betsR] = await Promise.all([
+      fetch(BASE + '/api/performance'),
+      fetch(BASE + '/api/bets?limit=500'),
+    ]);
+    const [perfData, betsData] = await Promise.all([perfR.json(), betsR.json()]);
+    _betsAll = betsData.bets || [];
+    renderTrackerBanner(perfData.overall);
+    applyTrackerFilters();
+  } catch(e) {
+    document.getElementById('bets-container').innerHTML = `<div class="empty">Error: ${e.message}</div>`;
+  }
+}
+
+function renderTrackerBanner(o) {
+  if (!o) return;
+  const wr   = o.win_rate != null ? (o.win_rate*100).toFixed(1)+'%' : '—';
+  const roi  = o.roi      != null ? (o.roi >= 0 ? '+' : '') + (o.roi*100).toFixed(1)+'%' : '—';
+  const rc   = o.roi > 0 ? 'pos' : o.roi < 0 ? 'neg' : '';
+  const pend = o.pending  || 0;
+  document.getElementById('tracker-banner').innerHTML = `
+    <div class="tracker-banner-stats">
+      <div class="tbs-item"><div class="tbs-val">${wr}</div><div class="tbs-lbl">Hit Rate</div></div>
+      <div class="tbs-item"><div class="tbs-val ${rc}">${roi}</div><div class="tbs-lbl">ROI</div></div>
+      <div class="tbs-item"><div class="tbs-val">${o.wins}</div><div class="tbs-lbl">Won</div></div>
+      <div class="tbs-item"><div class="tbs-val">${o.losses}</div><div class="tbs-lbl">Lost</div></div>
+      <div class="tbs-item"><div class="tbs-val">${pend}</div><div class="tbs-lbl">Pending</div></div>
+    </div>
+    <div class="tracker-banner-right">
+      <strong>${o.total}</strong>auto-tracked picks
+    </div>`;
+  // Update settle button badge
+  const btn = document.getElementById('settle-btn');
+  if (btn && pend > 0) btn.innerHTML = btn.innerHTML.replace(/Settle.*$/, `Settle (${pend})`);
+}
+
+function setTrackerKind(k, btn) {
+  _betsKind = k;
+  document.querySelectorAll('#kind-toggle button').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  applyTrackerFilters();
+}
+
+function applyTrackerFilters() {
+  const from   = document.getElementById('tf-from').value;
+  const to     = document.getElementById('tf-to').value;
+  const status = document.getElementById('tf-status').value;
+  let bets = _betsAll;
+  if (from) bets = bets.filter(b => b.placed_at >= from);
+  if (to)   bets = bets.filter(b => b.placed_at <= to + 'T23:59:59');
+  if (status === 'pending') bets = bets.filter(b => !b.settled);
+  else if (status)          bets = bets.filter(b => b.result === status);
+  if (_betsKind !== 'all')  bets = bets.filter(b => b.kind  === _betsKind);
+  renderTrackerSummary(bets);
+  renderPnlChart(bets);
+  renderLedgerKpis(bets);
+  renderBetsTable(bets);
+}
+
+function renderTrackerSummary(bets) {
+  const settled   = bets.filter(b => b.settled);
+  const wins      = settled.filter(b => b.result === 'win').length;
+  const wr        = settled.length ? (wins/settled.length*100).toFixed(1)+'%' : '—';
+  const totalPnl  = settled.reduce((s,b) => s+(b.pnl||0), 0);
+  const totalStk  = settled.reduce((s,b) => s+(b.stake||0), 0);
+  const roi       = totalStk > 0 ? totalPnl/totalStk*100 : null;
+  // Best market by ROI (settled only)
+  const mkt = {};
+  settled.forEach(b => {
+    if (!mkt[b.market]) mkt[b.market] = {pnl:0, staked:0};
+    mkt[b.market].pnl    += b.pnl   || 0;
+    mkt[b.market].staked += b.stake || 0;
+  });
+  let bestMkt = '—', bestRoiVal = -Infinity;
+  Object.entries(mkt).forEach(([m,s]) => {
+    if (s.staked > 0) { const r = s.pnl/s.staked; if (r > bestRoiVal) { bestRoiVal = r; bestMkt = m; } }
+  });
+  const pnlNum  = totalPnl;
+  const pnlStr  = fmtKpnl(pnlNum);
+  const pnlCls  = pnlNum > 0 ? 'pos' : pnlNum < 0 ? 'neg' : '';
+  const roiStr  = roi != null ? (roi >= 0 ? '+' : '') + roi.toFixed(1)+'%' : '—';
+  const roiCls  = roi > 0 ? 'pos' : roi < 0 ? 'neg' : '';
+  const bestLbl = bestMkt === '—' ? '—' : fmtMarket(bestMkt);
+  const bestSub = bestRoiVal > -Infinity && bestMkt !== '—' ? (bestRoiVal*100).toFixed(1)+'% ROI' : '';
+  document.getElementById('tracker-summary').innerHTML = `
+    <div class="tsum"><div class="ts-val">${wr}</div><div class="ts-lbl">Win Rate</div><div class="ts-sub">${settled.length} settled</div></div>
+    <div class="tsum"><div class="ts-val ${roiCls}">${roiStr}</div><div class="ts-lbl">ROI</div></div>
+    <div class="tsum"><div class="ts-val ${pnlCls}">${pnlStr}</div><div class="ts-lbl">Total P&amp;L</div></div>
+    <div class="tsum"><div class="ts-val" style="font-size:${bestLbl.length>12?'14px':'18px'}">${bestLbl}</div><div class="ts-lbl">Best Market</div><div class="ts-sub">${bestSub}</div></div>
+  `;
+}
+
+function renderPnlChart(bets) {
+  const settled = bets.filter(b => b.settled && b.pnl != null)
+    .sort((a,b) => new Date(a.placed_at) - new Date(b.placed_at));
+  const container = document.getElementById('pnl-chart');
+  const totalEl   = document.getElementById('pnl-chart-total');
+  if (settled.length < 2) {
+    container.innerHTML = '<div class="empty" style="padding:28px">Not enough settled bets to chart.</div>';
+    if (totalEl) { totalEl.textContent = '—'; totalEl.style.color = 'var(--text-h)'; }
+    return;
+  }
+  let cum = 0;
+  const pts = settled.map(b => { cum += b.pnl; return {v:cum, win:b.result==='win', date:b.placed_at}; });
+  const W=760, H=160, PL=52, PR=12, PT=10, PB=22;
+  const vals = pts.map(p=>p.v);
+  const minV = Math.min(0, ...vals), maxV = Math.max(0, ...vals);
+  const range = maxV - minV || 1;
+  const gx = i => PL + (i/(pts.length-1))*(W-PL-PR);
+  const gy = v => PT + (1-(v-minV)/range)*(H-PT-PB);
+  const zY = gy(0).toFixed(1);
+  const last = pts[pts.length-1].v;
+  const lastStr = fmtKpnl(last);
+  const lineCol = last>=0?'var(--green)':'var(--red)';
+  if (totalEl) { totalEl.textContent = lastStr; totalEl.style.color = lineCol; }
+  // Y-axis ticks
+  const yticks = [maxV, (maxV+minV)/2, minV].map(v =>
+    `<text x="${PL-5}" y="${gy(v).toFixed(1)}" dy="3" font-size="9" fill="var(--dim)" text-anchor="end">${fmtKshort(v)}</text>`
+  ).join('');
+  const pathD = pts.map((p,i)=>(i===0?'M':'L')+gx(i).toFixed(1)+','+gy(p.v).toFixed(1)).join(' ');
+  const fillD = pathD+` L${gx(pts.length-1).toFixed(1)},${zY} L${gx(0).toFixed(1)},${zY} Z`;
+  const dots = pts.length <= 120 ? pts.map((p,i)=>
+    `<circle cx="${gx(i).toFixed(1)}" cy="${gy(p.v).toFixed(1)}" r="2.5" fill="${p.win?'var(--green)':'var(--red)'}" opacity="0.75"/>`
+  ).join('') : '';
+  const xDates = `
+    <text x="${gx(0).toFixed(1)}" y="${H}" font-size="9" fill="var(--dim)">${fmtDateShort(pts[0].date)}</text>
+    <text x="${gx(pts.length-1).toFixed(1)}" y="${H}" font-size="9" fill="var(--dim)" text-anchor="end">${fmtDateShort(pts[pts.length-1].date)}</text>`;
+  container.innerHTML = `<svg viewBox="0 0 ${W} ${H}" style="width:100%;overflow:visible" preserveAspectRatio="none">
+    <defs><linearGradient id="pnl-grad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="${lineCol}" stop-opacity="0.18"/>
+      <stop offset="100%" stop-color="${lineCol}" stop-opacity="0"/>
+    </linearGradient></defs>
+    <line x1="${PL}" y1="${PT}" x2="${PL}" y2="${H-PB}" stroke="var(--border)"/>
+    <line x1="${PL}" y1="${zY}" x2="${W-PR}" y2="${zY}" stroke="var(--border)" stroke-dasharray="3,3"/>
+    ${yticks}
+    <path d="${fillD}" fill="url(#pnl-grad)"/>
+    <path d="${pathD}" fill="none" stroke="${lineCol}" stroke-width="1.8"/>
+    ${dots}${xDates}
+  </svg>`;
+}
+
+function renderLedgerKpis(bets) {
+  const settled = bets.filter(b => b.settled);
+  const wins    = settled.filter(b => b.result==='win').length;
+  const wr      = settled.length ? (wins/settled.length*100).toFixed(1)+'%' : '—';
+  const pnl     = settled.reduce((s,b)=>s+(b.pnl||0),0);
+  const staked  = bets.reduce((s,b)=>s+(b.stake||0),0);
+  const clvB    = settled.filter(b=>b.clv!=null);
+  const avgClv  = clvB.length ? (clvB.reduce((s,b)=>s+b.clv,0)/clvB.length*100).toFixed(1)+'%' : '—';
+  const pnlStr  = fmtKpnl(pnl);
+  const pnlCls  = pnl>0?'pos':pnl<0?'neg':'';
+  const clvCls  = avgClv!=='—' && parseFloat(avgClv)>0 ? 'pos' : '';
+  document.getElementById('ledger-kpis').innerHTML =
+    kpi('Net P/L',      pnlStr,  pnlCls) +
+    kpi('Picks',        bets.length) +
+    kpi('Settled',      settled.length) +
+    kpi('Stake',        fmtK(staked)) +
+    kpi('Strike Rate',  wr,      wins/Math.max(settled.length,1)>0.5?'pos':'') +
+    kpi('Avg CLV',      avgClv,  clvCls);
+}
+
+function renderBetsTable(bets) {
+  const container = document.getElementById('bets-container');
+  if (!bets.length) { container.innerHTML = '<div class="empty">No bets match the current filters.</div>'; return; }
+  const groups = {};
+  bets.forEach((b,i) => { const k=dateKey(b.placed_at); if(!groups[k])groups[k]=[]; groups[k].push({...b,_idx:i+1}); });
+  const COLS = 10;
+  let html = `<table><thead><tr>
+    <th>#</th><th>Match</th><th>Market</th><th>Selection</th>
+    <th>Odds</th><th>EV%</th><th>Stake</th><th>Result</th><th>P&amp;L</th><th>CLV%</th>
+  </tr></thead><tbody>`;
+  Object.entries(groups).sort((a,b)=>b[0].localeCompare(a[0])).forEach(([,dayBets])=>{
+    const dayPnl   = dayBets.reduce((s,b)=>s+(b.pnl||0),0);
+    const pnlStr   = dayPnl>=0?`+${dayPnl.toFixed(2)}`:dayPnl.toFixed(2);
+    const pnlColor = dayPnl>0?'var(--green)':dayPnl<0?'var(--red)':'var(--dim)';
+    html += `<tr class="group-row"><td colspan="${COLS}"><div class="group-header">
+      <span class="group-date">${fmtDateFull(dayBets[0].placed_at)}</span>
+      <div class="group-meta">
+        <span>${dayBets.length} bet${dayBets.length!==1?'s':''}</span>
+        <span style="color:${pnlColor};font-weight:600">${pnlStr}</span>
+      </div>
+    </div></td></tr>`;
+    const matchOrder = [], matchGroups = {};
+    dayBets.forEach(b => {
+      const mk = b.match_id != null ? String(b.match_id) : '__acca__';
+      if (!matchGroups[mk]) { matchOrder.push(mk); matchGroups[mk] = []; }
+      matchGroups[mk].push(b);
+    });
+    matchOrder.forEach(mk => {
+      const mBets = matchGroups[mk];
+      const first = mBets[0];
+      const matchLabel = first.home && first.away ? `${first.home} v ${first.away}` : (mk==='__acca__'?'Accumulator':null);
+      const kickoffStr = first.kickoff ? fmtTime(first.kickoff) : '';
+      if (matchLabel) {
+        html += `<tr class="match-subrow"><td colspan="${COLS}" style="padding:4px 12px 2px;background:var(--bg2);border-bottom:1px solid var(--border)">
+          <span style="font-size:12px;font-weight:600;color:var(--text-h)">${matchLabel}</span>
+          ${kickoffStr?`<span style="font-size:11px;color:var(--dim);margin-left:8px">${kickoffStr}</span>`:''}
+        </td></tr>`;
+      }
+      mBets.forEach(b => {
+        const res = b.result==='win'  ? '<span class="badge badge-win">Won</span>'
+                  : b.result==='loss' ? '<span class="badge badge-loss">Lost</span>'
+                  : b.result==='void' ? '<span class="badge badge-void">Void</span>'
+                  : '<span class="badge badge-pend">Pending</span>';
+        const clv = b.clv!=null ? `<span class="${pnlClass(b.clv)}">${(b.clv*100).toFixed(1)}%</span>` : '—';
+        html += `<tr>
+          <td style="color:var(--dim);font-size:11px">${b._idx}</td>
+          <td style="color:var(--dim);font-size:11px">${matchLabel?'—':(b.home&&b.away?b.home+' v '+b.away:'—')}</td>
+          <td style="color:var(--dim)">${fmtMarket(b.market)}</td>
+          <td style="font-weight:500;color:var(--text-h)">${fmtSelection(b.market, b.selection, b.line)}</td>
+          <td style="font-weight:600;font-variant-numeric:tabular-nums">${b.odds.toFixed(2)}</td>
+          <td class="${b.ev>0?'pnl-pos':b.ev<0?'pnl-neg':''}">${b.ev!=null?(b.ev*100).toFixed(1)+'%':'—'}</td>
+          <td style="font-variant-numeric:tabular-nums;color:var(--dim)">${b.stake.toFixed(0)}</td>
+          <td>${res}</td>
+          <td class="${pnlClass(b.pnl)}">${b.pnl!=null?(b.pnl>=0?'+':'')+b.pnl.toFixed(2):'—'}</td>
+          <td>${clv}</td>
+        </tr>`;
       });
     });
-    html+='</tbody></table>';
-    container.innerHTML=html;
-  } catch(e) { container.innerHTML=`<div class="empty">Error: ${e.message}</div>`; }
+  });
+  html += '</tbody></table>';
+  container.innerHTML = html;
+}
+
+async function runSettle() {
+  const btn = document.getElementById('settle-btn');
+  btn.disabled = true;
+  const orig = btn.innerHTML;
+  btn.innerHTML = '<span class="spinner"></span> Settling…';
+  try {
+    const r = await fetch(BASE + '/api/settle', { method: 'POST' });
+    const d = await r.json();
+    await loadBets();
+  } catch(e) { alert('Settle failed: ' + e.message); }
+  finally { btn.disabled = false; btn.innerHTML = orig; }
+}
+
+async function runPipelineFromTracker() {
+  const btn = document.getElementById('sync-btn');
+  btn.disabled = true;
+  const orig = btn.innerHTML;
+  btn.innerHTML = '<span class="spinner"></span> Syncing…';
+  try {
+    const r = await fetch(BASE + '/api/pipeline/run', { method: 'POST' });
+    await r.json();
+    await loadBets();
+  } catch(e) { alert('Sync failed: ' + e.message); }
+  finally { btn.disabled = false; btn.innerHTML = orig; }
+}
+
+function exportTrackerCSV() {
+  const from   = document.getElementById('tf-from').value;
+  const to     = document.getElementById('tf-to').value;
+  const status = document.getElementById('tf-status').value;
+  let bets = _betsAll;
+  if (from) bets = bets.filter(b => b.placed_at >= from);
+  if (to)   bets = bets.filter(b => b.placed_at <= to+'T23:59:59');
+  if (status === 'pending') bets = bets.filter(b => !b.settled);
+  else if (status)          bets = bets.filter(b => b.result === status);
+  if (_betsKind !== 'all')  bets = bets.filter(b => b.kind  === _betsKind);
+  const hdrs = ['#','Date','Match','Market','Selection','Odds','EV%','Stake','Result','P&L','CLV%'];
+  const rows = bets.map((b,i) => [
+    i+1,
+    new Date(b.placed_at).toISOString().slice(0,10),
+    b.home && b.away ? b.home+' v '+b.away : '—',
+    fmtMarket(b.market),
+    fmtSelection(b.market, b.selection, b.line),
+    b.odds.toFixed(2),
+    b.ev != null ? (b.ev*100).toFixed(1) : '',
+    b.stake.toFixed(0),
+    b.result || 'pending',
+    b.pnl != null ? b.pnl.toFixed(2) : '',
+    b.clv != null ? (b.clv*100).toFixed(1) : '',
+  ]);
+  const csv = [hdrs, ...rows].map(r => r.map(v => `"${v}"`).join(',')).join('\n');
+  const a = Object.assign(document.createElement('a'), {
+    href: URL.createObjectURL(new Blob([csv], {type:'text/csv'})),
+    download: `accubet-tracker-${new Date().toISOString().slice(0,10)}.csv`,
+  });
+  a.click();
+}
+
+// Helpers for number formatting in chart / ledger
+function fmtK(v) {                      // unsigned (stake, totals)
+  const abs = Math.abs(v);
+  if (abs >= 1e6) return 'K'+(abs/1e6).toFixed(2)+'M';
+  if (abs >= 1e3) return 'K'+(abs/1e3).toFixed(1)+'K';
+  return 'K'+abs.toFixed(0);
+}
+function fmtKpnl(v) {                   // signed P&L amounts
+  const s = v>=0?'+':'-', abs = Math.abs(v);
+  if (abs >= 1e6) return s+'K'+(abs/1e6).toFixed(2)+'M';
+  if (abs >= 1e3) return s+'K'+(abs/1e3).toFixed(1)+'K';
+  return s+'K'+abs.toFixed(0);
+}
+function fmtKshort(v) {                 // short axis labels
+  const s = v>=0?'+':'-', abs = Math.abs(v);
+  if (abs >= 1e6) return s+(abs/1e6).toFixed(1)+'M';
+  if (abs >= 1e3) return s+(abs/1e3).toFixed(0)+'K';
+  return s+abs.toFixed(0);
+}
+function fmtDateShort(iso) {
+  if (!iso) return '';
+  return _toUtcDate(iso).toLocaleDateString('en-GB', {day:'2-digit',month:'short',timeZone:'Africa/Blantyre'});
 }
 
 /* ── LOAD PERFORMANCE ─────────────────────── */

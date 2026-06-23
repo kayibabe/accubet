@@ -28,6 +28,7 @@ from accubet.models.predictor import run_predictions
 from accubet.storage.db import init_db, session_scope
 from accubet.storage.models import Consensus, Match, Result, TrackedBet
 from accubet.tracking.performance import report as perf_report
+from accubet.tracking.tracked_bets import settle
 
 _STATIC = Path(__file__).resolve().parent.parent / "static"
 
@@ -265,6 +266,15 @@ def bets(
                 "predicted_prob": b.predicted_prob,
             })
         return JSONResponse({"bets": items, "count": len(items)})
+
+
+@app.post("/api/settle")
+def settle_bets() -> JSONResponse:
+    """Settle all pending bets that now have match results."""
+    cfg = get_config()
+    with session_scope() as session:
+        result = settle(session, cfg)
+    return JSONResponse(result)
 
 
 @app.post("/api/pipeline/run")
