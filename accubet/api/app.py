@@ -144,6 +144,7 @@ def scan(
             items.append({
                 "match_id":     o.match_id,
                 "match":        f"{o.home} v {o.away}",
+                "competition":  o.competition,
                 "kickoff":      o.kickoff,
                 "market":       o.market,
                 "selection":    o.selection,

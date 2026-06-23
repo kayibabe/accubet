@@ -30,6 +30,7 @@ class ValueOpportunity:
     home: str
     away: str
     kickoff: str
+    competition: str = ""
     market: str
     selection: str
     line: float | None
@@ -106,6 +107,7 @@ def compare_match(
     home = match.home_team.name if match.home_team else "?"
     away = match.away_team.name if match.away_team else "?"
     kickoff = match.kickoff.isoformat() if match.kickoff else ""
+    competition = match.competition.name if match.competition else ""
 
     opps: list[ValueOpportunity] = []
     for c in consensus_rows:
@@ -136,7 +138,7 @@ def compare_match(
         conf_adj = min(1.0, conf + 0.05) if steam else conf
 
         opp = ValueOpportunity(
-            match_id=match.id, home=home, away=away, kickoff=kickoff,
+            match_id=match.id, home=home, away=away, kickoff=kickoff, competition=competition,
             market=c.market, selection=c.selection, line=c.line,
             fair_prob=true_prob, price=price,
             price_source=local_source if local_odds else "best",
