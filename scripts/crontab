@@ -1,0 +1,13 @@
+# AccuBet daily pipeline  (times in UTC; Malawi is UTC+3 = EAT)
+#
+# Morning run  05:00 UTC = 08:00 EAT
+#   Ingest today + tomorrow fixtures+odds, run predictions, log paper bets,
+#   settle any bets from yesterday whose results are now in.
+0 5 * * * root . /etc/cron_env && cd /app && accubet daily --days 2 --back 1 >> /data/cron.log 2>&1
+
+# Evening run  21:00 UTC = midnight EAT
+#   Re-ingest today (no odds, just results), settle today's finished matches.
+0 21 * * * root . /etc/cron_env && cd /app && accubet daily --days 1 --back 1 >> /data/cron.log 2>&1
+
+# Weekly log rotation - truncate cron.log if it exceeds 5 MB
+0 0 * * 0 root find /data -name "cron.log" -size +5M -exec truncate -s 0 {} \; 2>/dev/null || true

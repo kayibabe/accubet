@@ -1,0 +1,4 @@
+# Force LF for files that run on Linux
+*.sh text eol=lf
+scripts/crontab text eol=lf
+Dockerfile text eol=lf
