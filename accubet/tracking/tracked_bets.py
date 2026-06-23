@@ -65,11 +65,9 @@ def pnl_for(result: str, stake: float, odds: float) -> float:
 # --- logging ---------------------------------------------------------------
 
 def log_singles(session: Session, cfg: AppConfig, opps: list) -> int:
-    """Log the top-N gate-passing singles as paper bets (deduped)."""
-    passers = sorted((o for o in opps if getattr(o, "_passes", False)),
-                     key=lambda o: o.ev, reverse=True)[: cfg.tracking.top_singles_per_day]
+    """Log every signal as a flat-stake paper bet (deduped by match/market/selection/line)."""
     stored = 0
-    for o in passers:
+    for o in sorted(opps, key=lambda o: o.ev, reverse=True):
         dup = session.execute(
             select(TrackedBet.id).where(
                 TrackedBet.kind == "single",

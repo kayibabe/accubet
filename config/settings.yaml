@@ -81,8 +81,8 @@ accumulator:
 
 # Auto-tracking (paper bets) for performance measurement.
 tracking:
-  top_singles_per_day: 10
-  paper_stake: 10.0             # flat notional stake per paper bet for ROI math
+  top_singles_per_day: 500      # effectively unlimited — all signals are tracked
+  paper_stake: 50000.0          # K50,000 flat stake per paper bet
 
 # Local execution bookmaker we compare API-fair price against.
 local_book:
