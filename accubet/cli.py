@@ -50,7 +50,7 @@ def _upcoming_match_ids(session) -> list[int]:
     Including recent past matches lets the pipeline retroactively log paper bets
     for games that kicked off between pipeline runs.
     """
-    cutoff = datetime.utcnow() - timedelta(days=3)
+    cutoff = datetime.now() - timedelta(days=3)
     return list(session.execute(
         select(Match.id)
         .join(Consensus, Consensus.match_id == Match.id)
