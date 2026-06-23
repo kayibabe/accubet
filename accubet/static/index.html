@@ -475,6 +475,9 @@ svg{display:inline-block;vertical-align:middle;flex-shrink:0;}
 .card-comp{display:block;font-size:10px;font-weight:500;color:var(--dim);text-transform:uppercase;letter-spacing:.07em;margin-top:2px;opacity:.8;}
 .market-row-pick{background:color-mix(in srgb,var(--accent) 6%,transparent);border-radius:6px;}
 .pick-badge{font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);background:color-mix(in srgb,var(--accent) 15%,transparent);border:1px solid color-mix(in srgb,var(--accent) 30%,transparent);padding:1px 5px;border-radius:4px;flex-shrink:0;}
+.other-markets-toggle{display:flex;align-items:center;gap:5px;margin-top:6px;padding:0;background:none;border:none;cursor:pointer;font-size:11px;color:var(--dim);transition:color .15s;}
+.other-markets-toggle:hover{color:var(--fg);}
+.other-markets-toggle svg{transition:transform .2s;}
 .card-right{display:flex;align-items:center;gap:6px;flex-shrink:0;padding-top:2px;}
 .card-time{
   display:flex;align-items:center;gap:4px;
@@ -1678,14 +1681,11 @@ function renderScan() {
         resultBadge = `<span class="result-badge result-live">● LIVE</span>`;
       }
 
-      // Market rows — sorted by fair_prob desc (already sorted above)
-      const marketRows = m.signals.map((s, si) => {
-        const isTopPick = si === 0;
-        const line    = s.line != null ? ` ${s.line}` : '';
-        const evCls   = s.ev > 0 ? 'pos' : s.ev < 0 ? 'neg' : 'neu';
-        const evStr   = s.ev != null ? (s.ev >= 0 ? '+' : '') + (s.ev*100).toFixed(1) + '%' : '—';
-
-        // Outcome indicator for finished matches
+      // Market rows — sorted by fair_prob desc; only the top pick shown by default
+      const mkOtherId = `${cardId}-others`;
+      const buildRow = (s, isTopPick) => {
+        const evCls  = s.ev > 0 ? 'pos' : s.ev < 0 ? 'neg' : 'neu';
+        const evStr  = s.ev != null ? (s.ev >= 0 ? '+' : '') + (s.ev*100).toFixed(1) + '%' : '—';
         let outcomeBadge = '';
         if (isFT && m.result != null) {
           const oc = computeOutcome(s.market, s.selection, s.line, m.result.home_goals, m.result.away_goals);
@@ -1693,7 +1693,6 @@ function renderScan() {
           else if (oc === 'loss') outcomeBadge = '<span class="outcome-loss">✗</span>';
           else if (oc === 'void') outcomeBadge = '<span class="outcome-void">–</span>';
         }
-
         return `<div class="market-row${isTopPick ? ' market-row-pick' : ''}">
           <span class="market-name">${fmtMarketRow(s.market, s.selection, s.line)}</span>
           ${isTopPick ? '<span class="pick-badge">Pick</span>' : ''}
@@ -1711,7 +1710,18 @@ function renderScan() {
             ${outcomeBadge}
           </div>
         </div>`;
-      }).join('');
+      };
+      const topRow    = buildRow(m.signals[0], true);
+      const otherRows = m.signals.slice(1).map(s => buildRow(s, false)).join('');
+      const othersCount = m.signals.length - 1;
+      const othersHtml = othersCount > 0
+        ? `<div class="other-markets" id="${mkOtherId}" style="display:none">${otherRows}</div>
+           <button class="other-markets-toggle" onclick="toggleOtherMarkets('${mkOtherId}',this)">
+             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+             ${othersCount} other market${othersCount !== 1 ? 's' : ''}
+           </button>`
+        : '';
+      const marketRows = topRow + othersHtml;
 
       // Details panel: aggregated metrics for the match
       const bestSig  = m.signals.reduce((best,s) => (s.ev||0) > (best.ev||0) ? s : best, m.signals[0]);
@@ -1780,6 +1790,16 @@ function renderScan() {
   });
 
   document.getElementById('scan-cards').innerHTML = html;
+}
+
+function toggleOtherMarkets(id, btn) {
+  const panel = document.getElementById(id);
+  const open  = panel.style.display === 'none' ? true : false;
+  panel.style.display = open ? 'block' : 'none';
+  const count = btn.dataset.count || btn.textContent.match(/\d+/)?.[0] || '';
+  btn.innerHTML = open
+    ? `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg> Hide other markets`
+    : `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg> ${count} other market${count!=='1'?'s':''}`;
 }
 
 function toggleDetails(id, btn) {
