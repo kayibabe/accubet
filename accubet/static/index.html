@@ -474,7 +474,9 @@ svg{display:inline-block;vertical-align:middle;flex-shrink:0;}
 .card-match{font-size:16px;font-weight:600;color:var(--text-h);line-height:1.3;cursor:default;}
 .card-comp{display:block;font-size:10px;font-weight:500;color:var(--dim);text-transform:uppercase;letter-spacing:.07em;margin-top:2px;opacity:.8;}
 .market-row-pick{background:color-mix(in srgb,var(--accent) 6%,transparent);border-radius:6px;}
+.market-row-ev{background:color-mix(in srgb,var(--green) 7%,transparent);border-radius:6px;}
 .pick-badge{font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);background:color-mix(in srgb,var(--accent) 15%,transparent);border:1px solid color-mix(in srgb,var(--accent) 30%,transparent);padding:1px 5px;border-radius:4px;flex-shrink:0;}
+.pick-badge-ev{color:var(--green);background:color-mix(in srgb,var(--green) 15%,transparent);border-color:color-mix(in srgb,var(--green) 30%,transparent);}
 .other-markets-toggle{display:flex;align-items:center;gap:5px;margin-top:6px;padding:0;background:none;border:none;cursor:pointer;font-size:11px;color:var(--dim);transition:color .15s;}
 .other-markets-toggle:hover{color:var(--fg);}
 .other-markets-toggle svg{transition:transform .2s;}
@@ -1681,9 +1683,14 @@ function renderScan() {
         resultBadge = `<span class="result-badge result-live">● LIVE</span>`;
       }
 
-      // Market rows — sorted by fair_prob desc; only the top pick shown by default
-      const mkOtherId = `${cardId}-others`;
-      const buildRow = (s, isTopPick) => {
+      // Market rows — sorted by fair_prob desc; top-prob shown by default, top-EV marked separately
+      const mkOtherId  = `${cardId}-others`;
+      const topProbSig = m.signals[0];
+      const topEvSig   = m.signals.reduce((b, s) => (s.ev||0) > (b.ev||0) ? s : b, m.signals[0]);
+
+      const buildRow = (s) => {
+        const isTopProb = s === topProbSig;
+        const isTopEv   = s === topEvSig;
         const evCls  = s.ev > 0 ? 'pos' : s.ev < 0 ? 'neg' : 'neu';
         const evStr  = s.ev != null ? (s.ev >= 0 ? '+' : '') + (s.ev*100).toFixed(1) + '%' : '—';
         let outcomeBadge = '';
@@ -1693,9 +1700,11 @@ function renderScan() {
           else if (oc === 'loss') outcomeBadge = '<span class="outcome-loss">✗</span>';
           else if (oc === 'void') outcomeBadge = '<span class="outcome-void">–</span>';
         }
-        return `<div class="market-row${isTopPick ? ' market-row-pick' : ''}">
+        const rowCls = isTopEv ? ' market-row-ev' : isTopProb ? ' market-row-pick' : '';
+        return `<div class="market-row${rowCls}">
           <span class="market-name">${fmtMarketRow(s.market, s.selection, s.line)}</span>
-          ${isTopPick ? '<span class="pick-badge">Pick</span>' : ''}
+          ${isTopProb ? '<span class="pick-badge">Top Prob</span>' : ''}
+          ${isTopEv   ? '<span class="pick-badge pick-badge-ev">Track</span>' : ''}
           ${confPill(s.confidence)}
           <div class="prob-bar-wrap">
             <div class="prob-bar">
@@ -1711,17 +1720,23 @@ function renderScan() {
           </div>
         </div>`;
       };
-      const topRow    = buildRow(m.signals[0], true);
-      const otherRows = m.signals.slice(1).map(s => buildRow(s, false)).join('');
-      const othersCount = m.signals.length - 1;
-      const othersHtml = othersCount > 0
+
+      // Always show the top-prob row; if top-EV is different, show it too
+      const topEvIsDiff = topEvSig !== topProbSig;
+      const visibleRows = topEvIsDiff
+        ? buildRow(topProbSig) + buildRow(topEvSig)
+        : buildRow(topProbSig);
+      const hiddenSigs  = m.signals.filter(s => s !== topProbSig && s !== topEvSig);
+      const otherRows   = hiddenSigs.map(s => buildRow(s)).join('');
+      const othersCount = hiddenSigs.length;
+      const othersHtml  = othersCount > 0
         ? `<div class="other-markets" id="${mkOtherId}" style="display:none">${otherRows}</div>
            <button class="other-markets-toggle" onclick="toggleOtherMarkets('${mkOtherId}',this)">
              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
              ${othersCount} other market${othersCount !== 1 ? 's' : ''}
            </button>`
         : '';
-      const marketRows = topRow + othersHtml;
+      const marketRows = visibleRows + othersHtml;
 
       // Details panel: aggregated metrics for the match
       const bestSig  = m.signals.reduce((best,s) => (s.ev||0) > (best.ev||0) ? s : best, m.signals[0]);
