@@ -234,11 +234,23 @@ def bets(
             q = q.where(TrackedBet.market == market)
         rows = list(session.execute(q).scalars())
 
+        # Build a match lookup {match_id: match} for all referenced matches
+        match_ids = [b.match_id for b in rows if b.match_id is not None]
+        match_lookup: dict[int, Match] = {}
+        if match_ids:
+            for m in session.execute(select(Match).where(Match.id.in_(match_ids))).scalars():
+                match_lookup[m.id] = m
+
         items = []
         for b in rows:
+            m = match_lookup.get(b.match_id) if b.match_id else None
             items.append({
                 "id":            b.id,
                 "kind":          b.kind,
+                "match_id":      b.match_id,
+                "home":          m.home_team.name if m and m.home_team else None,
+                "away":          m.away_team.name if m and m.away_team else None,
+                "kickoff":       m.kickoff.isoformat() if m and m.kickoff else None,
                 "market":        b.market,
                 "selection":     b.selection,
                 "line":          b.line,
