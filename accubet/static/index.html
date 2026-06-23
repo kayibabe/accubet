@@ -1056,9 +1056,14 @@ function toggleFilters() {
 function pct(v, dp=1) { return v == null ? '—' : (v*100).toFixed(dp)+'%'; }
 function pnlClass(v) { return v > 0 ? 'pnl-pos' : v < 0 ? 'pnl-neg' : ''; }
 
+function _toUtcDate(iso) {
+  // Kickoffs are stored as UTC without a 'Z' suffix; append it so JS parses correctly.
+  if (!iso) return null;
+  return new Date(/Z$|[+-]\d{2}:?\d{2}$/.test(iso) ? iso : iso + 'Z');
+}
 function countdown(iso) {
   if (!iso) return '';
-  const ms = new Date(iso) - Date.now();
+  const ms = _toUtcDate(iso) - Date.now();
   if (ms < 0) return '';
   const h = Math.floor(ms / 3600000);
   const m = Math.floor((ms % 3600000) / 60000);
@@ -1068,7 +1073,9 @@ function countdown(iso) {
 }
 function fmtTime(iso) {
   if (!iso) return '—';
-  return new Date(iso).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+  return _toUtcDate(iso).toLocaleTimeString('en-GB', {
+    hour: '2-digit', minute: '2-digit', timeZone: 'Africa/Blantyre'
+  });
 }
 function _parseDatePart(iso) {
   // Parse only the YYYY-MM-DD portion to avoid timezone shifts
