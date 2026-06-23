@@ -30,7 +30,6 @@ class ValueOpportunity:
     home: str
     away: str
     kickoff: str
-    competition: str = ""
     market: str
     selection: str
     line: float | None
@@ -43,6 +42,7 @@ class ValueOpportunity:
     value_pct: float
     confidence: float       # 0-1
     n_books: int
+    competition: str = ""
     prob_source: str = "market"   # "ensemble" | "market"
     steam_move: bool = False      # True when price shortened >5% since opening
 
