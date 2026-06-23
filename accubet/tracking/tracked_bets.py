@@ -66,11 +66,9 @@ def pnl_for(result: str, stake: float, odds: float) -> float:
 
 def log_singles(session: Session, cfg: AppConfig, opps: list) -> int:
     """Log the highest-probability gate-passing signal per match as a flat-stake paper bet."""
-    # From gate-passing signals, keep only the highest-probability signal per match
+    # Keep only the highest-probability signal per match (no gate filter)
     best: dict[int, object] = {}
     for o in opps:
-        if not o._passes:
-            continue
         if o.match_id not in best or o.fair_prob > best[o.match_id].fair_prob:
             best[o.match_id] = o
 
