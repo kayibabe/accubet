@@ -279,6 +279,24 @@ def settle_bets() -> JSONResponse:
 
 
 
+@app.post("/api/admin/dedup-bets")
+def dedup_bets() -> JSONResponse:
+    """Keep only the highest predicted_prob single bet per match, delete the rest."""
+    with session_scope() as session:
+        singles = list(session.execute(select(TrackedBet).where(TrackedBet.kind == "single")).scalars())
+        by_match: dict[int, list] = {}
+        for b in singles:
+            by_match.setdefault(b.match_id, []).append(b)
+        deleted = 0
+        for bets in by_match.values():
+            bets.sort(key=lambda b: b.predicted_prob or 0, reverse=True)
+            for b in bets[1:]:
+                session.delete(b)
+                deleted += 1
+        session.flush()
+    return JSONResponse({"deleted": deleted, "matches_kept": len(by_match)})
+
+
 @app.post("/api/pipeline/run")
 def pipeline_run() -> JSONResponse:
     """Trigger `accubet daily` synchronously and return its output."""
