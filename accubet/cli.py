@@ -45,11 +45,19 @@ def _dates(start: str | None, days: int) -> list[str]:
 
 
 def _upcoming_match_ids(session) -> list[int]:
-    """Upcoming matches that have a consensus (the scan/track universe)."""
+    """Matches with consensus that are upcoming OR played within the last 3 days.
+
+    Including recent past matches lets the pipeline retroactively log paper bets
+    for games that kicked off between pipeline runs.
+    """
+    cutoff = datetime.utcnow() - timedelta(days=3)
     return list(session.execute(
         select(Match.id)
         .join(Consensus, Consensus.match_id == Match.id)
-        .where(Match.status.in_(("NS", "TBD", "PST")))
+        .where(
+            (Match.status.in_(("NS", "TBD", "PST"))) |
+            (Match.kickoff >= cutoff)
+        )
         .distinct()
     ).scalars().all())
 
