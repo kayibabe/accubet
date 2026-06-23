@@ -1120,6 +1120,47 @@ function calPrev() { if (--_calMonth < 0) { _calMonth=11; _calYear--; } renderCa
 function calNext() { if (++_calMonth > 11) { _calMonth=0; _calYear++; } renderCalendar(); }
 function calPick(ds) { _navigateDate(ds); }
 
+/* ── MARKET / SELECTION LABELS ──────────── */
+function fmtMarket(market) {
+  const MAP = {
+    match_winner:  'Match Winner',
+    over_under:    'Goals',
+    btts:          'Both Teams to Score',
+    draw_no_bet:   'Draw No Bet',
+    double_chance: 'Double Chance',
+  };
+  return MAP[market] || market;
+}
+function fmtSelection(market, selection, line) {
+  if (market === 'match_winner') {
+    return selection === 'home' ? 'Home Win'
+         : selection === 'away' ? 'Away Win'
+         : 'Draw';
+  }
+  if (market === 'over_under') {
+    const l = line != null ? ' ' + line : '';
+    return selection === 'over' ? 'Over' + l : 'Under' + l;
+  }
+  if (market === 'btts') {
+    return selection === 'yes' ? 'Yes' : 'No';
+  }
+  if (market === 'draw_no_bet') {
+    return selection === 'home' ? 'Home' : 'Away';
+  }
+  if (market === 'double_chance') {
+    return selection === '1x' ? 'Home or Draw'
+         : selection === 'x2' ? 'Draw or Away'
+         : 'Home or Away';
+  }
+  return selection;
+}
+function fmtMarketRow(market, selection, line) {
+  const sel = fmtSelection(market, selection, line);
+  if (market === 'match_winner') return sel;          // "Home Win" / "Away Win" / "Draw"
+  if (market === 'over_under')   return 'Goals · ' + sel;
+  return fmtMarket(market) + ' · ' + sel;
+}
+
 /* ── OUTCOME GRADER (client-side) ────────── */
 function computeOutcome(market, selection, line, homeGoals, awayGoals) {
   if (homeGoals == null || awayGoals == null) return null;
@@ -1493,7 +1534,7 @@ function renderScan() {
         }
 
         return `<div class="market-row">
-          <span class="market-name">${s.market} · ${s.selection}${line}</span>
+          <span class="market-name">${fmtMarketRow(s.market, s.selection, s.line)}</span>
           ${confPill(s.confidence)}
           <div class="prob-bar-wrap">
             <div class="prob-bar">
@@ -1627,8 +1668,8 @@ async function loadBets() {
         html+=`<tr>
           <td style="color:var(--dim);font-size:11px">${b._idx}</td>
           <td style="color:var(--dim);font-size:12px">${new Date(b.placed_at).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}</td>
-          <td style="color:var(--dim)">${b.market}</td>
-          <td style="font-weight:500;color:var(--text-h)">${b.selection}${b.line!=null?' '+b.line:''}</td>
+          <td style="color:var(--dim)">${fmtMarket(b.market)}</td>
+          <td style="font-weight:500;color:var(--text-h)">${fmtSelection(b.market, b.selection, b.line)}</td>
           <td style="font-weight:600;font-variant-numeric:tabular-nums">${b.odds.toFixed(2)}</td>
           <td class="${b.ev>0?'pnl-pos':b.ev<0?'pnl-neg':''}">${b.ev!=null?(b.ev*100).toFixed(1)+'%':'—'}</td>
           <td style="font-variant-numeric:tabular-nums;color:var(--dim)">${b.stake.toFixed(0)}</td>
