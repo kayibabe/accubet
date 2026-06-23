@@ -188,6 +188,112 @@ svg{display:inline-block;vertical-align:middle;flex-shrink:0;}
   color:var(--text);font-size:13px;font-weight:500;font-family:var(--sans);
   cursor:default;white-space:nowrap;
 }
+
+/* ────────────────────────────────────────────
+   DATE NAVIGATION
+──────────────────────────────────────────── */
+.date-nav{display:flex;align-items:center;gap:4px;}
+.date-nav-btn{
+  background:none;border:1px solid var(--border);color:var(--dim);
+  width:28px;height:28px;border-radius:7px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  transition:all .15s;flex-shrink:0;
+}
+.date-nav-btn:hover{border-color:var(--accent-border);color:var(--accent);background:var(--accent-bg);}
+.date-nav-picker{position:relative;}
+.date-nav-label{
+  min-width:140px;text-align:center;
+  font-size:13px;font-weight:500;color:var(--text);
+  padding:5px 12px;border-radius:7px;
+  border:1px solid var(--border);background:var(--surface);
+  white-space:nowrap;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;gap:6px;
+  transition:all .15s;font-family:var(--sans);
+}
+.date-nav-label:hover{border-color:var(--accent-border);color:var(--accent);background:var(--accent-bg);}
+.date-today-btn{
+  font-size:11px;font-weight:600;font-family:var(--sans);
+  padding:4px 9px;border-radius:7px;
+  border:1px solid var(--accent-border);background:var(--accent-bg);
+  color:var(--accent);cursor:pointer;transition:all .15s;white-space:nowrap;
+}
+.date-today-btn:hover{background:var(--accent);color:#fff;}
+
+/* ────────────────────────────────────────────
+   CALENDAR POPUP
+──────────────────────────────────────────── */
+.date-calendar{
+  position:absolute;top:calc(100% + 8px);left:50%;
+  transform:translateX(-50%);z-index:200;
+  background:var(--bg);border:1px solid var(--border);
+  border-radius:14px;padding:14px;
+  box-shadow:var(--shadow);width:256px;
+}
+.cal-header{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:12px;
+}
+.cal-month-label{font-size:13px;font-weight:700;color:var(--text-h);}
+.cal-nav{
+  background:none;border:1px solid var(--border);color:var(--dim);
+  width:26px;height:26px;border-radius:6px;cursor:pointer;
+  font-size:15px;display:flex;align-items:center;justify-content:center;
+  transition:all .15s;font-family:var(--sans);line-height:1;
+}
+.cal-nav:hover{border-color:var(--accent-border);color:var(--accent);background:var(--accent-bg);}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;}
+.cal-dow{
+  font-size:10px;font-weight:600;color:var(--dim);text-align:center;
+  padding:2px 0 6px;text-transform:uppercase;letter-spacing:.04em;
+}
+.cal-day{
+  aspect-ratio:1;border:none;background:none;border-radius:6px;
+  font-size:12px;color:var(--text);cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  transition:all .12s;font-family:var(--mono);padding:0;line-height:1;
+}
+.cal-day:not(.cal-empty):hover{background:var(--accent-bg);color:var(--accent);}
+.cal-day.cal-empty{pointer-events:none;color:transparent;}
+.cal-day.cal-today{
+  color:var(--accent);font-weight:700;
+  box-shadow:inset 0 0 0 1.5px var(--accent-border);
+}
+.cal-day.cal-selected{background:var(--accent);color:#fff !important;font-weight:700;}
+.cal-day.cal-has-data::after{
+  content:'';display:block;width:4px;height:4px;border-radius:50%;
+  background:var(--accent);position:absolute;bottom:3px;left:50%;transform:translateX(-50%);
+}
+.cal-day.cal-has-data{position:relative;}
+.cal-day.cal-selected::after{background:#fff;}
+
+/* ────────────────────────────────────────────
+   RESULT BADGES (on match cards)
+──────────────────────────────────────────── */
+.result-badge{
+  display:inline-flex;align-items:center;gap:4px;
+  font-size:13px;font-weight:700;font-variant-numeric:tabular-nums;
+  font-family:var(--mono);padding:2px 9px;border-radius:6px;
+  background:var(--surface);border:1px solid var(--border);
+  color:var(--text-h);flex-shrink:0;
+}
+.result-ft{
+  font-size:9px;font-weight:700;color:var(--dim);
+  text-transform:uppercase;letter-spacing:.05em;
+}
+.result-badge.result-live{
+  background:rgba(239,68,68,.12);border-color:rgba(239,68,68,.3);color:#ef4444;
+  animation:pulse-live 1.5s ease infinite;
+}
+@keyframes pulse-live{0%,100%{opacity:1;}50%{opacity:.6;}}
+
+/* outcome check/cross per market row */
+.outcome-win {color:var(--green);font-weight:800;font-size:14px;flex-shrink:0;line-height:1;}
+.outcome-loss{color:var(--red);  font-weight:800;font-size:14px;flex-shrink:0;line-height:1;}
+.outcome-void{color:var(--dim);  font-weight:700;font-size:14px;flex-shrink:0;line-height:1;}
+
+/* dim finished match cards slightly */
+.signal-card.status-ft{opacity:.82;}
+.signal-card.status-ft:hover{opacity:1;}
 .secondary-btn{
   display:flex;align-items:center;gap:6px;
   padding:6px 12px;border-radius:9px;
@@ -644,9 +750,21 @@ code{
       <div class="page-header">
         <h1 class="page-title">Signals</h1>
         <div class="page-actions">
-          <div class="date-chip">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-            <span id="date-label">Loading…</span>
+          <div class="date-nav">
+            <button class="date-nav-btn" onclick="prevDate()" title="Previous day">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+            </button>
+            <div class="date-nav-picker">
+              <button class="date-nav-label" id="date-label" onclick="toggleCalendar()">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                <span id="date-label-text">Loading…</span>
+              </button>
+              <div class="date-calendar" id="date-calendar" style="display:none"></div>
+            </div>
+            <button class="date-nav-btn" onclick="nextDate()" title="Next day">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
+            <button class="date-today-btn" id="today-btn" onclick="goToday()" style="display:none">Today</button>
           </div>
           <button class="secondary-btn" id="recompute-btn" onclick="loadScan()" disabled>
             <svg id="recompute-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
@@ -749,8 +867,14 @@ code{
 
 <script>
 const BASE = '';
-let _scanData = []; // cached opportunities
-let _subTab = 'all'; // 'all' | 'vb'
+let _scanData = [];          // cached opportunities for current view date
+let _subTab = 'all';         // 'all' | 'vb'
+let _viewDate = _todayStr(); // YYYY-MM-DD currently displayed
+let _dateCache = {};         // {dateStr: opportunities[]} for past dates
+
+function _todayStr() {
+  return new Date().toISOString().slice(0, 10);
+}
 
 /* ── THEME & SIDEBAR ─────────────────────── */
 function toggleTheme() {
@@ -784,10 +908,121 @@ function startClock() {
   }
   tick(); setInterval(tick, 1000);
 }
-function updateDateLabel() {
-  const now = new Date();
-  const d = now.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});
-  document.getElementById('date-label').textContent = `${d} · Today`;
+/* ── DATE NAVIGATION ─────────────────────── */
+function updateDateNav() {
+  const today = _todayStr();
+  const isToday = _viewDate === today;
+  const [y, m, d] = _viewDate.split('-').map(Number);
+  const dt = new Date(y, m - 1, d);
+  const label = isToday
+    ? 'Today · ' + dt.toLocaleDateString('en-GB', {day:'numeric', month:'short'})
+    : dt.toLocaleDateString('en-GB', {weekday:'short', day:'numeric', month:'short', year:'numeric'});
+  document.getElementById('date-label-text').textContent = label;
+  const btn = document.getElementById('today-btn');
+  if (btn) btn.style.display = isToday ? 'none' : '';
+}
+function prevDate() {
+  const [y, m, d] = _viewDate.split('-').map(Number);
+  const dt = new Date(y, m - 1, d - 1);
+  _navigateDate(_fmtDateStr(dt));
+}
+function nextDate() {
+  const [y, m, d] = _viewDate.split('-').map(Number);
+  const dt = new Date(y, m - 1, d + 1);
+  _navigateDate(_fmtDateStr(dt));
+}
+function goToday() { _navigateDate(_todayStr()); }
+function _navigateDate(dateStr) {
+  _viewDate = dateStr;
+  _scanData = [];
+  closeCalendar();
+  updateDateNav();
+  loadScan();
+}
+function _fmtDateStr(dt) {
+  return `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`;
+}
+
+/* ── CALENDAR POPUP ──────────────────────── */
+let _calYear = new Date().getFullYear();
+let _calMonth = new Date().getMonth();
+let _calOpen = false;
+
+function toggleCalendar() {
+  if (_calOpen) { closeCalendar(); return; }
+  const [y, m] = _viewDate.split('-').map(Number);
+  _calYear = y; _calMonth = m - 1;
+  _calOpen = true;
+  renderCalendar();
+  document.getElementById('date-calendar').style.display = 'block';
+}
+function closeCalendar() {
+  _calOpen = false;
+  document.getElementById('date-calendar').style.display = 'none';
+}
+function renderCalendar() {
+  const today = _todayStr();
+  const firstDow = new Date(_calYear, _calMonth, 1).getDay();
+  const daysInMonth = new Date(_calYear, _calMonth + 1, 0).getDate();
+  const monthLabel = new Date(_calYear, _calMonth, 1)
+    .toLocaleDateString('en-GB', {month:'long', year:'numeric'});
+
+  let html = `<div class="cal-header">
+    <button class="cal-nav" onclick="calPrev()">&#8249;</button>
+    <span class="cal-month-label">${monthLabel}</span>
+    <button class="cal-nav" onclick="calNext()">&#8250;</button>
+  </div>
+  <div class="cal-grid">
+    <span class="cal-dow">Su</span><span class="cal-dow">Mo</span><span class="cal-dow">Tu</span>
+    <span class="cal-dow">We</span><span class="cal-dow">Th</span><span class="cal-dow">Fr</span>
+    <span class="cal-dow">Sa</span>`;
+
+  for (let i = 0; i < firstDow; i++) html += '<span class="cal-day cal-empty"></span>';
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const ds = `${_calYear}-${String(_calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const isSel   = ds === _viewDate;
+    const isToday = ds === today;
+    const hasDot  = !!_dateCache[ds];
+    html += `<button class="cal-day${isSel?' cal-selected':''}${isToday?' cal-today':''}${hasDot?' cal-has-data':''}"
+      onclick="calPick('${ds}')">${d}</button>`;
+  }
+
+  html += '</div>';
+  document.getElementById('date-calendar').innerHTML = html;
+}
+function calPrev() { if (--_calMonth < 0) { _calMonth=11; _calYear--; } renderCalendar(); }
+function calNext() { if (++_calMonth > 11) { _calMonth=0; _calYear++; } renderCalendar(); }
+function calPick(ds) { _navigateDate(ds); }
+
+/* ── OUTCOME GRADER (client-side) ────────── */
+function computeOutcome(market, selection, line, homeGoals, awayGoals) {
+  if (homeGoals == null || awayGoals == null) return null;
+  const hg = homeGoals, ag = awayGoals;
+  if (market === 'match_winner') {
+    const res = hg > ag ? 'home' : ag > hg ? 'away' : 'draw';
+    return selection === res ? 'win' : 'loss';
+  }
+  if (market === 'btts') {
+    const yes = hg > 0 && ag > 0;
+    return (selection === 'yes') === yes ? 'win' : 'loss';
+  }
+  if (market === 'over_under') {
+    if (line == null) return 'void';
+    const total = hg + ag;
+    if (total === line) return 'void';
+    return (selection === 'over') === (total > line) ? 'win' : 'loss';
+  }
+  if (market === 'draw_no_bet') {
+    if (hg === ag) return 'void';
+    return selection === (hg > ag ? 'home' : 'away') ? 'win' : 'loss';
+  }
+  if (market === 'double_chance') {
+    const res = hg > ag ? 'home' : ag > hg ? 'away' : 'draw';
+    const cover = {'1x':new Set(['home','draw']),'12':new Set(['home','away']),'x2':new Set(['draw','away'])};
+    return (cover[selection] || new Set()).has(res) ? 'win' : 'loss';
+  }
+  return null;
 }
 
 /* ── TAB SWITCHING ────────────────────────── */
@@ -835,18 +1070,22 @@ function fmtTime(iso) {
   if (!iso) return '—';
   return new Date(iso).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
 }
+function _parseDatePart(iso) {
+  // Parse only the YYYY-MM-DD portion to avoid timezone shifts
+  const [y, m, d] = iso.slice(0,10).split('-').map(Number);
+  return new Date(y, m - 1, d);
+}
 function fmtDateFull(iso) {
   if (!iso) return '';
-  return new Date(iso).toLocaleDateString('en-GB',{weekday:'long',day:'2-digit',month:'short',year:'numeric'});
+  return _parseDatePart(iso).toLocaleDateString('en-GB',{weekday:'long',day:'2-digit',month:'short',year:'numeric'});
 }
 function fmtDateShort(iso) {
   if (!iso) return '';
-  const d = new Date(iso);
-  const today = new Date(); today.setHours(0,0,0,0);
-  const tom = new Date(today); tom.setDate(tom.getDate()+1);
-  d.setHours(0,0,0,0);
-  if (d.getTime()===today.getTime()) return 'Today';
-  if (d.getTime()===tom.getTime())   return 'Tomorrow';
+  const d     = _parseDatePart(iso);
+  const today = _parseDatePart(_todayStr());
+  const tom   = new Date(today); tom.setDate(tom.getDate() + 1);
+  if (d.getTime() === today.getTime()) return 'Today';
+  if (d.getTime() === tom.getTime())   return 'Tomorrow';
   return d.toLocaleDateString('en-GB',{weekday:'long',day:'2-digit',month:'short'});
 }
 function dateKey(iso) { return iso ? iso.slice(0,10) : 'unknown'; }
@@ -917,27 +1156,38 @@ async function checkHealth() {
 
 /* ── LOAD SCAN ───────────────────────────── */
 async function loadScan() {
-  const syncBtn=document.getElementById('sync-btn');
-  const recBtn=document.getElementById('recompute-btn');
-  syncBtn.disabled=true; syncBtn.innerHTML='<span class="spinner"></span>Syncing…';
-  document.getElementById('scan-cards').innerHTML='<div class="empty"><span class="spinner"></span>Loading signals…</div>';
+  const syncBtn = document.getElementById('sync-btn');
+  const recBtn  = document.getElementById('recompute-btn');
+
+  // Serve from cache for past dates (today is always re-fetched on explicit Sync)
+  const today = _todayStr();
+  if (_viewDate !== today && _dateCache[_viewDate]) {
+    _scanData = _dateCache[_viewDate];
+    recBtn.disabled = false;
+    renderScan();
+    return;
+  }
+
+  syncBtn.disabled = true;
+  syncBtn.innerHTML = '<span class="spinner"></span>Syncing…';
+  document.getElementById('scan-cards').innerHTML = '<div class="empty"><span class="spinner"></span>Loading signals…</div>';
   try {
-    const r = await fetch(`${BASE}/api/scan?top=200&gates_only=false`);
+    const r = await fetch(`${BASE}/api/scan?top=200&gates_only=false&date=${_viewDate}`);
     const data = await r.json();
     _scanData = data.opportunities || [];
+    _dateCache[_viewDate] = _scanData;
     recBtn.disabled = false;
     renderScan();
   } catch(e) {
-    document.getElementById('scan-cards').innerHTML=`<div class="empty">Error: ${e.message}</div>`;
+    document.getElementById('scan-cards').innerHTML = `<div class="empty">Error: ${e.message}</div>`;
   } finally {
-    syncBtn.disabled=false;
-    syncBtn.innerHTML=`<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Sync API`;
+    syncBtn.disabled = false;
+    syncBtn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Sync API`;
   }
 }
 
 /* ── RENDER SCAN (filter + group + display) ── */
 function renderScan() {
-  if (!_scanData.length && document.getElementById('scan-cards').querySelector('.spinner')) return;
 
   const gatesOnly = _subTab === 'vb';
   const mktFilter = document.getElementById('market-filter-scan').value;
@@ -982,7 +1232,11 @@ function renderScan() {
   const matchMap = {};
   opps.forEach(o => {
     if (!matchMap[o.match]) {
-      matchMap[o.match] = { match: o.match, kickoff: o.kickoff, signals: [] };
+      matchMap[o.match] = {
+        match: o.match, kickoff: o.kickoff, signals: [],
+        status: o.match_status || 'NS',
+        result: o.result || null,
+      };
     }
     matchMap[o.match].signals.push(o);
   });
@@ -1038,12 +1292,35 @@ function renderScan() {
       const anyPass  = m.anyPass  ? '<span class="badge badge-pass">✓ Gate</span>' : '';
       const anySteam = m.anySteam ? '<span class="badge badge-steam">⚡ Steam</span>' : '';
 
+      // Match status flags
+      const FT_STATUSES   = new Set(['FT','AET','PEN','AWD','WO']);
+      const LIVE_STATUSES = new Set(['LIVE','1H','2H','HT','ET','BT','P','INT']);
+      const isFT   = FT_STATUSES.has(m.status);
+      const isLive = LIVE_STATUSES.has(m.status);
+
+      // Result badge for card header
+      let resultBadge = '';
+      if (isFT && m.result != null) {
+        resultBadge = `<span class="result-badge">${m.result.home_goals}&nbsp;–&nbsp;${m.result.away_goals}&nbsp;<span class="result-ft">FT</span></span>`;
+      } else if (isLive) {
+        resultBadge = `<span class="result-badge result-live">● LIVE</span>`;
+      }
+
       // Market rows — sorted by fair_prob desc (already sorted above)
       const marketRows = m.signals.map(s => {
         const line    = s.line != null ? ` ${s.line}` : '';
         const evCls   = s.ev > 0 ? 'pos' : s.ev < 0 ? 'neg' : 'neu';
         const evStr   = s.ev != null ? (s.ev >= 0 ? '+' : '') + (s.ev*100).toFixed(1) + '%' : '—';
-        const implied = s.price > 0 ? pct(1/s.price) : '—';
+
+        // Outcome indicator for finished matches
+        let outcomeBadge = '';
+        if (isFT && m.result != null) {
+          const oc = computeOutcome(s.market, s.selection, s.line, m.result.home_goals, m.result.away_goals);
+          if      (oc === 'win')  outcomeBadge = '<span class="outcome-win">✓</span>';
+          else if (oc === 'loss') outcomeBadge = '<span class="outcome-loss">✗</span>';
+          else if (oc === 'void') outcomeBadge = '<span class="outcome-void">–</span>';
+        }
+
         return `<div class="market-row">
           <span class="market-name">${s.market} · ${s.selection}${line}</span>
           ${confPill(s.confidence)}
@@ -1057,6 +1334,7 @@ function renderScan() {
             <span class="odds-pill-sm">${s.price.toFixed(2)}</span>
             ${srcTag(s.price_source)}
             <span class="ev-text ${evCls}">${evStr}</span>
+            ${outcomeBadge}
           </div>
         </div>`;
       }).join('');
@@ -1065,14 +1343,17 @@ function renderScan() {
       const bestSig  = m.signals.reduce((best,s) => (s.ev||0) > (best.ev||0) ? s : best, m.signals[0]);
       const detailId = `${cardId}-det`;
 
-      html += `<div class="signal-card ${evCardClass(m.bestEv)}">
+      const cardStatusCls = isFT ? 'status-ft' : '';
+
+      html += `<div class="signal-card ${evCardClass(m.bestEv)} ${cardStatusCls}">
         <div class="card-body">
           <div class="card-header">
             <span class="card-match">${m.match}</span>
             <div class="card-right">
+              ${resultBadge}
               <span class="card-time">
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                ${fmtTime(m.kickoff)}${cd ? ` <span class="card-countdown">(${cd})</span>` : ''}
+                ${fmtTime(m.kickoff)}${cd && !isFT ? ` <span class="card-countdown">(${cd})</span>` : ''}
               </span>
               ${rankBadge(m._matchRank)}
             </div>
@@ -1213,10 +1494,15 @@ async function loadPerf() {
 
 /* ── BOOT ─────────────────────────────────── */
 startClock();
-updateDateLabel();
+updateDateNav();
 checkHealth();
 loadScan();
 setInterval(checkHealth, 30000);
+
+// Close calendar when clicking outside the picker
+document.addEventListener('click', e => {
+  if (_calOpen && !e.target.closest('.date-nav-picker')) closeCalendar();
+});
 </script>
 </body>
 </html>
