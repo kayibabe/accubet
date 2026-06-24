@@ -360,7 +360,10 @@ def daily(
         total_new = 0
         for d in back_dates + fwd_dates:
             past = d < date.today().isoformat()
-            matches, rep = ingest_fixtures(session, cfg, client, d, force=past)
+            # Force-fetch for any date up to and including today so FT scores
+            # are captured even when today's cache was populated before kickoff.
+            force_fetch = d <= date.today().isoformat()
+            matches, rep = ingest_fixtures(session, cfg, client, d, force=force_fetch)
             if not past and matches:
                 ingest_odds(session, cfg, client, matches, rep)
             if not past and matches:
