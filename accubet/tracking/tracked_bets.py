@@ -78,9 +78,6 @@ def log_singles(session: Session, cfg: AppConfig, opps: list) -> int:
             select(TrackedBet.id).where(
                 TrackedBet.kind == "single",
                 TrackedBet.match_id == o.match_id,
-                TrackedBet.market == o.market,
-                TrackedBet.selection == o.selection,
-                TrackedBet.line == o.line,
             )
         ).first()
         if dup:
