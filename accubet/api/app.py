@@ -26,7 +26,7 @@ from accubet.market.comparison import scan as scan_value
 from accubet.market.consensus import build_all_consensus
 from accubet.models.predictor import run_predictions
 from accubet.storage.db import init_db, session_scope
-from accubet.storage.models import Consensus, Match, Result, TrackedBet
+from accubet.storage.models import Accumulator, AccumulatorLeg, Consensus, Match, Result, TrackedBet
 from accubet.tracking.performance import report as perf_report
 from accubet.tracking.tracked_bets import settle
 
@@ -279,6 +279,46 @@ def settle_bets() -> JSONResponse:
 
 
 
+
+
+@app.get("/api/accumulators")
+def accumulators() -> JSONResponse:
+    """Return all accumulators with their legs."""
+    with session_scope() as session:
+        accs = list(session.execute(select(Accumulator).order_by(Accumulator.id.desc())).scalars())
+        match_ids = {leg.match_id for acc in accs for leg in acc.legs}
+        match_lookup: dict[int, Match] = {}
+        if match_ids:
+            for m in session.execute(select(Match).where(Match.id.in_(match_ids))).scalars():
+                match_lookup[m.id] = m
+
+        items = []
+        for acc in accs:
+            legs = []
+            for leg in acc.legs:
+                m = match_lookup.get(leg.match_id)
+                legs.append({
+                    "match_id":  leg.match_id,
+                    "match":     f"{m.home_team.name} v {m.away_team.name}" if m and m.home_team and m.away_team else "?",
+                    "kickoff":   m.kickoff.isoformat() if m and m.kickoff else None,
+                    "market":    leg.market,
+                    "selection": leg.selection,
+                    "line":      leg.line,
+                    "odds":      leg.odds,
+                    "prob":      round(leg.prob, 4),
+                })
+            items.append({
+                "id":             acc.id,
+                "tier":           acc.tier,
+                "mode":           acc.mode,
+                "combined_odds":  acc.combined_odds,
+                "combined_prob":  round(acc.combined_prob, 4),
+                "expected_return": round(acc.expected_return, 4),
+                "risk_rating":    acc.risk_rating,
+                "created_at":     acc.created_at.isoformat() if acc.created_at else None,
+                "legs":           legs,
+            })
+    return JSONResponse({"accumulators": items, "count": len(items)})
 
 
 @app.post("/api/pipeline/run")
