@@ -322,11 +322,15 @@ def accumulators() -> JSONResponse:
 
 
 @app.post("/api/pipeline/run")
-def pipeline_run() -> JSONResponse:
-    """Trigger `accubet daily` synchronously and return its output."""
+def pipeline_run(back: int = Query(1, ge=1, le=7)) -> JSONResponse:
+    """Trigger `accubet daily` synchronously and return its output.
+
+    Pass *back* to look further back for results (e.g. back=2 fetches yesterday + 2 days ago).
+    Past dates are always force-fetched so FT scores are captured even when the cache is stale.
+    """
     try:
         result = subprocess.run(
-            [sys.executable, "-m", "accubet.cli", "daily", "--days", "2", "--back", "1"],
+            [sys.executable, "-m", "accubet.cli", "daily", "--days", "2", "--back", str(back)],
             capture_output=True, text=True, timeout=120,
         )
         output = result.stdout + (("\n" + result.stderr) if result.stderr else "")

@@ -360,7 +360,7 @@ def daily(
         total_new = 0
         for d in back_dates + fwd_dates:
             past = d < date.today().isoformat()
-            matches, rep = ingest_fixtures(session, cfg, client, d)
+            matches, rep = ingest_fixtures(session, cfg, client, d, force=past)
             if not past and matches:
                 ingest_odds(session, cfg, client, matches, rep)
             if not past and matches:
